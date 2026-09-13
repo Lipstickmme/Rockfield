@@ -1,7 +1,7 @@
 {
-  "_comment": "The bank's public contact details. Editable at the client services desk under Settings; changes reach every page on the next load with no rebuild.",
-  "address": "1 Rockfield Plaza, Suite 2200, Columbus, OH 43215",
+  "_comment": "The bank's public contact details. The address and the telephone number are deliberately blank: they are per-deployment, and an invented number on a live bank's contact page is a number somebody rings. An operator sets them at the staff console under Settings, and every page picks them up on its next load with no rebuild. Anything left blank has its row left out of the page entirely rather than printed empty.",
+  "address": "",
   "email": "support@rockfieldbank.com",
-  "phone": "1-800-762-5343",
-  "hours": "Monday to Friday, 8:00am to 9:00pm ET. Saturday, 9:00am to 5:00pm ET."
+  "phone": "",
+  "hours": ""
 }

@@ -53,7 +53,7 @@
       </g>
     </svg></span>
         <span>
-          <strong>Rockfield National Bank</strong>
+          <strong>Rockfield<span class="rf-full-name"> National Bank</span></strong>
           <small>Member FDIC</small>
         </span>
       </a>
@@ -73,8 +73,8 @@
   </header>
 
   
-  <header class="rf-hero" style="padding-block:clamp(58px,8vw,96px) clamp(38px,5vw,62px)">
-    <img src="/assets/bank/business.svg" alt="" aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.22" />
+  <header class="rf-hero compact has-photo">
+    <img class="rf-hero-photo" src="/assets/img/rockfield3.png" alt="" aria-hidden="true" />
     <div class="wrap">
       <span class="rf-eyebrow">Business banking</span>
       <h1 style="font-size:clamp(32px,4.6vw,52px)">Banking that keeps up with the business.</h1>
@@ -102,7 +102,7 @@
       <div class="rf-grid cols-2">
         
         <article class="rf-card">
-          <img src="/assets/bank/story-logistics.svg" alt="" loading="lazy" style="width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:var(--rf-radius) var(--rf-radius) 0 0;display:block" />
+          <img src="/assets/img/story-logistics.png" alt="" loading="lazy" style="width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:var(--rf-radius) var(--rf-radius) 0 0;display:block" />
           <div class="rf-card-body">
             <span class="rf-eyebrow">Business banking &middot; Columbus, OH</span>
             <h3 style="font-family:var(--rf-display);font-size:20px;margin:6px 0 8px">Meridian Logistics</h3>
@@ -114,7 +114,7 @@
           </div>
         </article>
         <article class="rf-card">
-          <img src="/assets/bank/story-property.svg" alt="" loading="lazy" style="width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:var(--rf-radius) var(--rf-radius) 0 0;display:block" />
+          <img src="/assets/img/story-property.png" alt="" loading="lazy" style="width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:var(--rf-radius) var(--rf-radius) 0 0;display:block" />
           <div class="rf-card-body">
             <span class="rf-eyebrow">Commercial lending &middot; Columbus, OH</span>
             <h3 style="font-family:var(--rf-display);font-size:20px;margin:6px 0 8px">Harrow Street Residences</h3>
@@ -126,7 +126,7 @@
           </div>
         </article>
         <article class="rf-card">
-          <img src="/assets/bank/story-retail.svg" alt="" loading="lazy" style="width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:var(--rf-radius) var(--rf-radius) 0 0;display:block" />
+          <img src="/assets/img/story-retail.png" alt="" loading="lazy" style="width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:var(--rf-radius) var(--rf-radius) 0 0;display:block" />
           <div class="rf-card-body">
             <span class="rf-eyebrow">Merchant services &middot; Dublin, OH</span>
             <h3 style="font-family:var(--rf-display);font-size:20px;margin:6px 0 8px">Field & Vine Grocers</h3>
@@ -138,7 +138,7 @@
           </div>
         </article>
         <article class="rf-card">
-          <img src="/assets/bank/story-personal.svg" alt="" loading="lazy" style="width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:var(--rf-radius) var(--rf-radius) 0 0;display:block" />
+          <img src="/assets/img/story-personal.png" alt="" loading="lazy" style="width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:var(--rf-radius) var(--rf-radius) 0 0;display:block" />
           <div class="rf-card-body">
             <span class="rf-eyebrow">Personal banking &middot; Columbus, OH</span>
             <h3 style="font-family:var(--rf-display);font-size:20px;margin:6px 0 8px">The Ellis household</h3>
@@ -183,7 +183,7 @@
             <strong style="color:#fff;font-family:var(--rf-display);font-size:16px">Rockfield National Bank</strong>
           </div>
           <p style="margin:0 0 12px;max-width:34ch">Banking built on bedrock. Personal and business banking since 1924.</p>
-          <p style="margin:0;font-size:12.5px">1 Rockfield Plaza, Suite 2200<br />Columbus, OH 43215</p>
+          <p style="margin:0;font-size:12.5px" data-site-row="address" hidden><span data-site="address"></span></p>
         </div>
         <div>
           <h5>Bank</h5>
@@ -196,7 +196,7 @@
           <h5>Support</h5>
           <a href="/support">Help centre</a>
           <a href="/security-center">Security centre</a>
-          <a href="tel:+18007625343">1-800-762-5343</a>
+          <a href="#" data-site-row="phone" data-site="phone" hidden></a>
           <a href="mailto:support@rockfieldbank.com">support@rockfieldbank.com</a>
         </div>
         <div>

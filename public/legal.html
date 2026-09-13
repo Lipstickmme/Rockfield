@@ -53,7 +53,7 @@
       </g>
     </svg></span>
         <span>
-          <strong>Rockfield National Bank</strong>
+          <strong>Rockfield<span class="rf-full-name"> National Bank</span></strong>
           <small>Member FDIC</small>
         </span>
       </a>
@@ -73,8 +73,28 @@
   </header>
 
   
-  <header class="rf-hero" style="padding-block:clamp(58px,8vw,96px) clamp(38px,5vw,62px)">
-    <img src="/assets/bank/security.svg" alt="" aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.22" />
+  <header class="rf-hero compact has-mark">
+    <span class="rf-hero-mark" aria-hidden="true"><svg viewBox="0 0 240 150" width="480" height="300" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <g stroke-width="5">
+      <path d="M14 141 H226" />
+      <path d="M27 141 L38 96 L55 62 L76 36 L98 31 L114 47 L126 70 L134 96 L139 118 L142 124" />
+      <path d="M126 79 L168 49 L210 79" />
+      <path d="M126 79 H210 V88 H126 Z" />
+      <path d="M124 116 H212 V124 H124 Z" />
+      <path d="M120 124 H216 L226 141 H110 Z" />
+      </g>
+      <g stroke-width="3.5">
+      <path d="M79 39 L64 71 L75 100 L62 124" />
+      <path d="M101 61 L89 86 L99 110" />
+      <circle cx="168" cy="70" r="4" />
+      <path d="M137 88 V116" />
+      <path d="M148 88 V116" />
+      <path d="M159 88 V116" />
+      <path d="M170 88 V116" />
+      <path d="M181 88 V116" />
+      <path d="M192 88 V116" />
+      </g>
+    </svg></span>
     <div class="wrap">
       <span class="rf-eyebrow">Legal</span>
       <h1 style="font-size:clamp(32px,4.6vw,52px)">Disclosures.</h1>
@@ -87,7 +107,7 @@
       <article class="rf-card"><div class="rf-card-body">
         <h2 id="privacy" style="font-family:var(--rf-display);margin-top:0;font-size:24px">Privacy notice</h2>
         <p class="rf-muted">Rockfield National Bank, N.A. collects the information needed to open and run your accounts: your name, address, date of birth, Social Security number, identification documents, transaction history and the devices you use to reach us. We share it only with the service providers who help us run the bank, and with regulators and law enforcement where the law requires it. We do not sell it.</p>
-        <p class="rf-muted">You may limit marketing at any time under Alerts inside online banking, or by calling <span data-site="phone">1-800-762-5343</span>.</p>
+        <p class="rf-muted">You may limit marketing at any time under Alerts inside online banking, or by calling <span data-site="phone">client services</span>.</p>
 
         <h2 id="terms" style="font-family:var(--rf-display);font-size:24px">Online banking agreement</h2>
         <p class="rf-muted">Access to online banking is personal to you. Keep your password and one-time codes to yourself, tell us immediately if you think someone else has them, and review your statements. We may hold, delay or decline a payment where we reasonably suspect fraud, where it would breach a limit, or where sanctions screening requires a manual check. Where we decline one, the funds return to your available balance and you are told why.</p>
@@ -99,7 +119,7 @@
         <p class="rf-muted">For checks deposited through mobile deposit, the first $225 is generally available on the first business day after the day of deposit, and the remainder by the second business day. We may place a longer hold in the circumstances permitted by Regulation CC, and we will tell you when we do.</p>
 
         <h2 id="accessibility" style="font-family:var(--rf-display);font-size:24px">Accessibility</h2>
-        <p class="rf-muted">We aim to meet WCAG 2.2 AA across online banking. If any part of this site is difficult to use, tell us on <span data-site="phone">1-800-762-5343</span> or <a href="mailto:support@rockfieldbank.com" data-site="email">support@rockfieldbank.com</a> and we will help you complete what you were doing and fix the underlying problem.</p>
+        <p class="rf-muted">We aim to meet WCAG 2.2 AA across online banking. If any part of this site is difficult to use, tell us on <span data-site="phone">the client services line</span> or <a href="mailto:support@rockfieldbank.com" data-site="email">support@rockfieldbank.com</a> and we will help you complete what you were doing and fix the underlying problem.</p>
 
         <h2 id="demo" style="font-family:var(--rf-display);font-size:24px">About this application</h2>
         <p class="rf-muted">Rockfield National Bank, N.A. is a fictional institution. This site is a demonstration of a banking application: the routing number, account numbers, card numbers and customer records used throughout are synthetic, reach no real financial institution, and no real money can move through it.</p>
@@ -136,7 +156,7 @@
             <strong style="color:#fff;font-family:var(--rf-display);font-size:16px">Rockfield National Bank</strong>
           </div>
           <p style="margin:0 0 12px;max-width:34ch">Banking built on bedrock. Personal and business banking since 1924.</p>
-          <p style="margin:0;font-size:12.5px">1 Rockfield Plaza, Suite 2200<br />Columbus, OH 43215</p>
+          <p style="margin:0;font-size:12.5px" data-site-row="address" hidden><span data-site="address"></span></p>
         </div>
         <div>
           <h5>Bank</h5>
@@ -149,7 +169,7 @@
           <h5>Support</h5>
           <a href="/support">Help centre</a>
           <a href="/security-center">Security centre</a>
-          <a href="tel:+18007625343">1-800-762-5343</a>
+          <a href="#" data-site-row="phone" data-site="phone" hidden></a>
           <a href="mailto:support@rockfieldbank.com">support@rockfieldbank.com</a>
         </div>
         <div>

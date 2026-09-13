@@ -306,6 +306,33 @@
     }
   }
 
+  /**
+   * Fill in the bank's contact details, wherever the page asks for them.
+   *
+   * The telephone numbers and the postal address are set by an operator at the
+   * console, not built into the page, so the markup ships with a standing
+   * phrase ("us", "our fraud line") or a hidden row and this replaces it once
+   * /config answers. Skipped entirely on a page that asks for none of them.
+   */
+  async function hydrateContact() {
+    const fields = qsa('[data-site]');
+    const rows = qsa('[data-site-row]');
+    if (!fields.length && !rows.length) return;
+    let bank;
+    try {
+      bank = (await api.get('/config')).bank || {};
+    } catch (err) {
+      return; // The standing phrases are correct on their own.
+    }
+    fields.forEach((el) => {
+      const value = bank[el.getAttribute('data-site')];
+      if (!value) return;
+      el.textContent = value;
+      if (el.tagName === 'A') el.href = `tel:${String(value).replace(/[^+\d]/g, '')}`;
+    });
+    rows.forEach((row) => { row.hidden = !bank[row.getAttribute('data-site-row')]; });
+  }
+
   async function bootstrap() {
     const isApp = document.body.classList.contains('rf-app');
     let session = null;
@@ -336,6 +363,9 @@
       }
       paintUser(session);
     }
+    // Not awaited: nothing on the page is blocked on a telephone number, and a
+    // slow /config should not hold up the dashboard behind it.
+    hydrateContact();
     return session;
   }
 

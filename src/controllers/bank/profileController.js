@@ -16,6 +16,7 @@ const security = require('../../bank/security');
 const auth = require('../../bank/auth');
 const audit = require('../../bank/audit');
 const alerts = require('../../bank/alerts');
+const contact = require('../../bank/contact');
 const ids = require('../../bank/ids');
 const { asyncHandler, fail, trimmed } = require('../../bank/http');
 const { DOCUMENT_KINDS, SECURITY_QUESTIONS, US_STATES, BANK } = require('../../bank/constants');
@@ -49,7 +50,7 @@ const me = asyncHandler(async (req, res) => {
     user: users.publicUser(req.bankUser, 'self'),
     counts: { accounts: accounts.length, cards: cards.length, sessions: sessions.length },
     options: { states: US_STATES, securityQuestions: SECURITY_QUESTIONS, documentKinds: DOCUMENT_KINDS },
-    bank: { name: BANK.name, phone: BANK.phone, fraudPhone: BANK.fraudPhone, email: BANK.email },
+    bank: { name: BANK.name, email: BANK.email, ...contact.current() },
   });
 });
 
@@ -73,7 +74,7 @@ const updateProfile = asyncHandler(async (req, res) => {
     heading: 'Your details changed',
     intro: 'These contact details on your account were just updated.',
     rows: changed.map((field) => ({ label: field.replace(/_/g, ' '), value: String(after[field] || '-') })),
-    footNote: `If you did not make this change, call ${BANK.fraudPhone}.`,
+    footNote: `If you did not make this change, please ${contact.callFraud()}.`,
   });
   res.json({ user: users.publicUser(after, 'self') });
 });
@@ -287,7 +288,7 @@ const updateSecurity = asyncHandler(async (req, res) => {
     subject: 'Your Rockfield security settings changed',
     heading: 'Security settings updated',
     intro: notes.join('. ') + '.',
-    footNote: `If this was not you, call ${BANK.fraudPhone}.`,
+    footNote: `If this was not you, please ${contact.callFraud()}.`,
   });
   res.json({ status: 'ok', user: users.publicUser(await db.users.findById(user.id), 'self') });
 });

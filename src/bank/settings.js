@@ -63,4 +63,20 @@ function invalidate() {
   cachedAt = 0;
 }
 
-module.exports = { get, save, invalidate, deepMerge };
+/**
+ * The last settings read, without waiting for one.
+ *
+ * For the places that need a value inside a template literal and cannot be
+ * made async for it - an email footer, a validation message. get() is called
+ * on nearly every request, so this is at most a few seconds behind, which is
+ * the right trade for a telephone number. Anything that decides whether money
+ * moves must use get() and await it.
+ */
+function snapshot() {
+  return cached || DEFAULT_SETTINGS;
+}
+
+/** Whether snapshot() is reporting a real read rather than the defaults. */
+snapshot.warm = () => cached !== null;
+
+module.exports = { get, save, invalidate, deepMerge, snapshot };

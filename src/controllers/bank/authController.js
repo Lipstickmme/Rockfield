@@ -14,6 +14,7 @@ const users = require('../../bank/users');
 const security = require('../../bank/security');
 const settings = require('../../bank/settings');
 const config = require('../../utils/config');
+const contact = require('../../bank/contact');
 const alerts = require('../../bank/alerts');
 const audit = require('../../bank/audit');
 const seed = require('../../bank/seed');
@@ -52,7 +53,7 @@ const login = asyncHandler(async (req, res) => {
           subject: 'Your Rockfield account is temporarily locked',
           heading: 'Too many sign-in attempts',
           intro: 'We locked online banking for 15 minutes after several incorrect passwords.',
-          body: `If this was not you, call us on ${BANK.fraudPhone} straight away.`,
+          body: `If this was not you, ${contact.callFraud()} straight away.`,
           severity: 'warning',
         });
       }
@@ -66,7 +67,7 @@ const login = asyncHandler(async (req, res) => {
       throw fail(423, 'Too many attempts. Online banking is locked for 15 minutes.', 'locked');
     }
     if (result.reason === 'closed') {
-      throw fail(403, `This account is closed. Call us on ${BANK.phone}.`, 'closed');
+      throw fail(403, `This account is closed. Please ${contact.callSupport()}.`, 'closed');
     }
     throw fail(401, GENERIC, 'invalid_credentials');
   }
@@ -78,7 +79,7 @@ const login = asyncHandler(async (req, res) => {
       action: 'auth.login_blocked', category: 'security', userId: user.id, req, severity: 'warning',
       actor: { id: user.id, email, role: user.role }, detail: 'Sign-in on a suspended account',
     });
-    throw fail(403, `This account is suspended. Call us on ${BANK.phone}.`, 'suspended');
+    throw fail(403, `This account is suspended. Please ${contact.callSupport()}.`, 'suspended');
   }
 
   // Second factor, when the customer has it switched on.
@@ -95,7 +96,7 @@ const login = asyncHandler(async (req, res) => {
         { label: 'IP address', value: audit.clientIp(req) || 'unknown' },
         { label: 'Time', value: new Date().toLocaleString('en-US') },
       ],
-      footNote: `If this was not you, change your password and call ${BANK.fraudPhone}.`,
+      footNote: `If this was not you, change your password and ${contact.callFraud()}.`,
     });
     await audit.log({
       action: 'auth.otp_issued', category: 'security', userId: user.id, req,
@@ -146,7 +147,7 @@ async function finishLogin(req, res, user, { remember = false } = {}) {
         { label: 'IP address', value: audit.clientIp(req) || 'unknown' },
         { label: 'Time', value: new Date().toLocaleString('en-US') },
       ],
-      footNote: `Not you? Call ${BANK.fraudPhone}.`,
+      footNote: `Not you? Please ${contact.callFraud()}.`,
     });
   }
 
@@ -268,7 +269,7 @@ const changePassword = asyncHandler(async (req, res) => {
       { label: 'Device', value: audit.describeDevice(req.headers['user-agent'] || '').label },
       { label: 'Other sessions signed out', value: String(revoked) },
     ],
-    footNote: `If this was not you, call ${BANK.fraudPhone} immediately.`,
+    footNote: `If this was not you, ${contact.callFraud()} immediately.`,
   });
   res.json({ status: 'ok', signedOutSessions: revoked });
 });
@@ -288,7 +289,7 @@ const forgot = asyncHandler(async (req, res) => {
       subject: 'Reset your Rockfield password',
       heading: 'Reset your password',
       intro: `Use code ${code} to set a new password. It expires shortly.`,
-      footNote: `If you did not ask for this, ignore this email and call ${BANK.fraudPhone} if you are concerned.`,
+      footNote: `If you did not ask for this, ignore this email and ${contact.callFraud()} if you are concerned.`,
     });
     await audit.log({
       action: 'security.reset_requested', category: 'security', userId: user.id, req,
@@ -335,7 +336,7 @@ const resetPassword = asyncHandler(async (req, res) => {
     subject: 'Your Rockfield password was reset',
     heading: 'Your password was reset',
     intro: 'Your online banking password has just been reset and every other session was signed out.',
-    footNote: `If this was not you, call ${BANK.fraudPhone} immediately.`,
+    footNote: `If this was not you, ${contact.callFraud()} immediately.`,
   });
   res.json({ status: 'ok' });
 });

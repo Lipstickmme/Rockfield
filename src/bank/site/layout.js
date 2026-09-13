@@ -214,7 +214,7 @@ function authPage({ title, description, content, extraScripts = [] }) {
       </ul>
       <div class="rf-auth-foot">
         ${BANK.name} will never call, text or email to ask for your password or a one-time code.<br />
-        Report anything suspicious on ${BANK.fraudPhone}.<br />
+        Report anything suspicious on <span data-site="fraudPhone">our fraud line</span>.<br />
         &copy; ${YEAR} ${BANK.legalName}. Member FDIC. Equal Housing Lender.
       </div>
     </section>
@@ -238,7 +238,7 @@ function marketingNav(active = '') {
       <a class="brandline" href="/" aria-label="${BANK.name} home">
         <span class="rf-mark on-paper">${logo.emblem({ height: 34, weight: 7 })}</span>
         <span>
-          <strong>${BANK.name}</strong>
+          <strong>${BANK.shortName}<span class="rf-full-name"> ${BANK.name.replace(`${BANK.shortName} `, '')}</span></strong>
           <small>Member FDIC</small>
         </span>
       </a>
@@ -269,7 +269,7 @@ function marketingFooter() {
             <strong style="color:#fff;font-family:var(--rf-display);font-size:16px">${BANK.name}</strong>
           </div>
           <p style="margin:0 0 12px;max-width:34ch">${BANK.tagline} Personal and business banking since ${BANK.established}.</p>
-          <p style="margin:0;font-size:12.5px">${BANK.address.street}<br />${BANK.address.city}, ${BANK.address.state} ${BANK.address.zip}</p>
+          <p style="margin:0;font-size:12.5px" data-site-row="address" hidden><span data-site="address"></span></p>
         </div>
         <div>
           <h5>Bank</h5>
@@ -282,7 +282,7 @@ function marketingFooter() {
           <h5>Support</h5>
           <a href="/support">Help centre</a>
           <a href="/security-center">Security centre</a>
-          <a href="tel:${BANK.phoneRaw}">${BANK.phone}</a>
+          <a href="#" data-site-row="phone" data-site="phone" hidden></a>
           <a href="mailto:${BANK.email}">${BANK.email}</a>
         </div>
         <div>

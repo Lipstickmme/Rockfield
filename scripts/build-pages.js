@@ -36,5 +36,12 @@ const picked = Array.from(new Set(images._resolved));
 if (picked.length) {
   console.log(`[build] using ${picked.length} supplied image(s): ${picked.join(', ')}`);
 } else {
-  console.log('[build] no rockfield1..rockfield6 found in public/assets/bank: using the generated placeholder artwork');
+  console.log('[build] no supplied artwork found in public/assets/img: using the generated placeholder artwork');
+}
+
+// The slots are one-to-one with placements so that no photograph appears on
+// two pages. If two of them land on the same file the pages still build and
+// still look fine one at a time, which is exactly why it needs saying here.
+if (images._repeated.length) {
+  console.warn(`[build] WARNING: ${images._repeated.length} image(s) used by more than one slot: ${images._repeated.join(', ')}`);
 }

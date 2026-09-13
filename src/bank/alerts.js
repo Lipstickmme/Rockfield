@@ -16,6 +16,7 @@
 const { db } = require('./db');
 const ids = require('./ids');
 const settings = require('./settings');
+const contact = require('./contact');
 const { ALERT_TYPES, BANK } = require('./constants');
 
 const TYPES = new Map(ALERT_TYPES.map((t) => [t.id, t]));
@@ -56,6 +57,10 @@ function wantsAlert(user, typeId) {
  */
 function renderEmail({ heading, intro, rows = [], body = '', cta, footNote, bankName }) {
   const name = bankName || BANK.name;
+  // Blank until an operator sets it at the console, in which case the whole
+  // postal line comes out of the footer rather than leaving a dangling
+  // separator before "Member FDIC".
+  const postal = contact.addressLine();
   const rowsHtml = rows.length
     ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0;border-collapse:collapse">
         ${rows.map((r) => `<tr>
@@ -83,8 +88,8 @@ function renderEmail({ heading, intro, rows = [], body = '', cta, footNote, bank
         </td></tr>
         <tr><td style="background:#faf8f4;border-top:1px solid #e8e5df;padding:18px 26px;color:#847f76;font:400 11px/1.7 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
           ${escapeHtml(name)} will never ask for your password, one-time code or full card number by email or phone.<br />
-          If you did not expect this message, call ${escapeHtml(BANK.fraudPhone)} straight away.<br />
-          ${escapeHtml(BANK.address.street)}, ${escapeHtml(BANK.address.city)}, ${escapeHtml(BANK.address.state)} ${escapeHtml(BANK.address.zip)} &middot; Member FDIC &middot; Equal Housing Lender
+          If you did not expect this message, ${escapeHtml(contact.callFraud())} straight away.<br />
+          ${postal ? `${escapeHtml(postal)} &middot; ` : ''}Member FDIC &middot; Equal Housing Lender
         </td></tr>
       </table>
     </td></tr>
@@ -94,6 +99,7 @@ function renderEmail({ heading, intro, rows = [], body = '', cta, footNote, bank
 
 /** The text part: the same content, readable without HTML. */
 function renderText({ heading, intro, rows = [], body = '', cta, footNote, bankName }) {
+  const questions = contact.supportLine('Questions');
   const lines = [heading, ''];
   if (intro) lines.push(intro, '');
   rows.forEach((r) => lines.push(`${r.label}: ${r.value}`));
@@ -102,7 +108,8 @@ function renderText({ heading, intro, rows = [], body = '', cta, footNote, bankN
   if (cta) lines.push(`${cta.label}: ${cta.href}`, '');
   if (footNote) lines.push(footNote, '');
   lines.push(`${bankName || BANK.name} will never ask for your password or one-time code.`);
-  lines.push(`Questions: ${BANK.phone}`);
+  // Left out entirely rather than printed as a label with nothing after it.
+  if (questions) lines.push(questions);
   return lines.join('\n');
 }
 

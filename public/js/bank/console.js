@@ -875,6 +875,10 @@
     set('routingNumber', s.routingNumber);
     set('supportEmail', s.supportEmail);
     set('supportPhone', s.supportPhone);
+    set('fraudPhone', s.fraudPhone);
+    set('internationalPhone', s.internationalPhone);
+    set('supportHours', s.supportHours);
+    set('mailingAddress', s.mailingAddress);
     set('announcement', s.announcement);
     set('announcementLevel', s.announcementLevel);
     set('sessionMinutes', s.sessionMinutes);
@@ -923,7 +927,13 @@
         bankName: values.bankName,
         routingNumber: values.routingNumber,
         supportEmail: values.supportEmail,
-        supportPhone: values.supportPhone,
+        // Trimmed, and sent even when empty: clearing a field at the console
+        // has to be able to take the detail back off the site.
+        supportPhone: (values.supportPhone || '').trim(),
+        fraudPhone: (values.fraudPhone || '').trim(),
+        internationalPhone: (values.internationalPhone || '').trim(),
+        supportHours: (values.supportHours || '').trim(),
+        mailingAddress: (values.mailingAddress || '').trim(),
         announcement: values.announcement || '',
         announcementLevel: values.announcementLevel,
         sessionMinutes: Number(values.sessionMinutes) || 30,

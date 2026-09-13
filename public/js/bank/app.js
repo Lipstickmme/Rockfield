@@ -245,8 +245,12 @@
         ['Routing (ABA)', `<span class="rf-mono">${esc(data.details.routingNumber)}</span>`],
         ['SWIFT', `<span class="rf-mono">${esc(data.details.swift)}</span>`],
         ['Bank', esc(data.details.bankName)],
-        ['Bank address', esc(data.details.bankAddress)],
-      ].map(([k, v]) => `<dt>${k}</dt><dd class="mono">${v}</dd>`).join('');
+        // The address is operator-supplied and blank until it is set. A wire
+        // form with an empty "Bank address" beside it is worse than one
+        // without the row: it looks like the detail is missing rather than
+        // not published.
+        data.details.bankAddress ? ['Bank address', esc(data.details.bankAddress)] : null,
+      ].filter(Boolean).map(([k, v]) => `<dt>${k}</dt><dd class="mono">${v}</dd>`).join('');
 
       qs('[data-copy-details]').onclick = () => RF.copy(data.details.wireInstructions, 'Account details copied');
 
@@ -383,7 +387,7 @@
           <div class="rf-statement-head">
             <div>
               <h2>${esc(data.bank.name)}</h2>
-              <div class="addr">${esc(data.bank.address.street)}<br />${esc(data.bank.address.city)}, ${esc(data.bank.address.state)} ${esc(data.bank.address.zip)}<br />${esc(data.bank.phone)}</div>
+              <div class="addr">${[data.bank.address, data.bank.phone].filter(Boolean).map(esc).join('<br />')}</div>
             </div>
             <div class="rf-right">
               <div class="addr"><strong>${esc(data.customer.name)}</strong><br />${data.customer.addressLines.map(esc).join('<br />')}</div>
@@ -419,7 +423,7 @@
           </table>
           <p class="rf-disclosure rf-mt">
             ${esc(data.bank.legalName)} &middot; Member FDIC &middot; Equal Housing Lender. In case of errors or questions about your electronic transfers,
-            telephone ${esc(data.bank.phone)} or write to us at the address above as soon as you can. We must hear from you no later than 60 days after we sent you
+            ${data.bank.phone ? `telephone ${esc(data.bank.phone)} or ` : ''}write to us${data.bank.address ? ' at the address above' : ''} as soon as you can. We must hear from you no later than 60 days after we sent you
             the first statement on which the problem appeared.
           </p>
         </div>`;

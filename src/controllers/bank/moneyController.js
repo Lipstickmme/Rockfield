@@ -13,6 +13,7 @@ const transfersLib = require('../../bank/transfers');
 const accountsLib = require('../../bank/accounts');
 const settings = require('../../bank/settings');
 const alerts = require('../../bank/alerts');
+const contact = require('../../bank/contact');
 const audit = require('../../bank/audit');
 const profile = require('./profileController');
 const { asyncHandler, fail, toCents, trimmed, money, page } = require('../../bank/http');
@@ -206,7 +207,7 @@ const createBeneficiary = asyncHandler(async (req, res) => {
       { label: 'Account', value: ids.maskAccount(accountNumber) },
       { label: 'Type', value: type.replace(/_/g, ' ') },
     ],
-    footNote: `If you did not add this recipient, call ${BANK.fraudPhone} before making any payment.`,
+    footNote: `If you did not add this recipient, ${contact.callFraud()} before making any payment.`,
   });
 
   res.status(201).json({ beneficiary: publicBeneficiary(row) });

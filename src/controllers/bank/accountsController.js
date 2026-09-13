@@ -13,6 +13,7 @@ const ledger = require('../../bank/ledger');
 const accountsLib = require('../../bank/accounts');
 const alerts = require('../../bank/alerts');
 const audit = require('../../bank/audit');
+const contact = require('../../bank/contact');
 const ids = require('../../bank/ids');
 const { asyncHandler, fail, page, csv, money } = require('../../bank/http');
 const { CATEGORIES, TRANSACTION_METHODS, ACCOUNT_TYPES, BANK } = require('../../bank/constants');
@@ -100,7 +101,10 @@ const detail = asyncHandler(async (req, res) => {
       accountNumber: account.account_number,
       swift: account.swift,
       bankName: BANK.name,
-      bankAddress: `${BANK.address.street}, ${BANK.address.city}, ${BANK.address.state} ${BANK.address.zip}`,
+      // Empty until an operator sets it. A wire needs a real beneficiary bank
+      // address, so an invented one here is worse than none: the customer
+      // would quote it to a sending bank.
+      bankAddress: contact.addressLine(),
       wireInstructions: `Beneficiary: ${req.bankUser.first_name} ${req.bankUser.last_name} | Account ${account.account_number} | ABA ${account.routing_number} | SWIFT ${account.swift}`,
     },
   });
@@ -240,7 +244,10 @@ const statementDetail = asyncHandler(async (req, res) => {
         [req.bankUser.city, req.bankUser.state, req.bankUser.postal_code].filter(Boolean).join(', '),
       ].filter(Boolean),
     },
-    bank: BANK,
+    // The institution, plus the contact details an operator has set. A
+    // statement is the one place a postal address really matters, so it is
+    // sent as its own line and the renderer leaves it out when it is blank.
+    bank: { ...BANK, ...contact.current() },
   });
 });
 

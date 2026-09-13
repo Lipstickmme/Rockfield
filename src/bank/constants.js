@@ -24,22 +24,20 @@ const BANK = {
   swift: 'RKFDUS44XXX',
   fdicCert: '58412',
   nmls: '409127',
-  phone: '1-800-762-5343',
-  phoneRaw: '+18007625343',
-  internationalPhone: '+1 614 555 0142',
-  fraudPhone: '1-800-762-5399',
   email: 'support@rockfieldbank.com',
   securityEmail: 'security@rockfieldbank.com',
-  address: {
-    street: '1 Rockfield Plaza, Suite 2200',
-    city: 'Columbus',
-    state: 'OH',
-    zip: '43215',
-    country: 'United States',
-  },
-  hours: 'Monday to Friday, 8:00am - 9:00pm ET | Saturday, 9:00am - 5:00pm ET',
   established: 1924,
 };
+
+/*
+ * The telephone numbers and the postal address are deliberately not here.
+ *
+ * They are the one part of the institution that is genuinely per-deployment,
+ * and a made-up number printed on a live bank's contact page is worse than no
+ * number at all: somebody rings it. So they live in DEFAULT_SETTINGS below,
+ * blank, and an operator fills them in at the staff console under Settings.
+ * Read them through src/bank/contact.js, never from BANK.
+ */
 
 /** Deposit and credit products, as they appear in the open-account flows. */
 const PRODUCTS = [
@@ -164,7 +162,14 @@ const DEFAULT_SETTINGS = {
   bankName: BANK.name,
   routingNumber: BANK.routingNumber,
   supportEmail: BANK.email,
-  supportPhone: BANK.phone,
+  // Blank until an operator sets them at the console. Everything that prints
+  // a number checks first and says something sensible when there is none, so
+  // a fresh deployment simply has no telephone number rather than a fake one.
+  supportPhone: '',
+  fraudPhone: '',
+  internationalPhone: '',
+  mailingAddress: '',
+  supportHours: '',
   announcement: '',
   announcementLevel: 'info',
   maintenanceMode: false,

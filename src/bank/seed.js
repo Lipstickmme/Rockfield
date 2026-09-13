@@ -389,8 +389,10 @@ async function ensureSeed(options = {}) {
     kycStatus: 'verified',
     tier: 'Staff',
     twoFactorEnabled: false,
-    city: BANK.address.city,
-    state: BANK.address.state,
+    // The seeded staff member's own address, not the bank's - which is now
+    // operator-supplied and blank until someone sets it.
+    city: 'Columbus',
+    state: 'OH',
     country: 'United States',
   });
 

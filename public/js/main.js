@@ -30,10 +30,10 @@
     { code: 'S-04', title: 'Digital Engineering', summary: 'BIM coordination, parametric design and digital twins that keep every discipline working from one source of truth.', capabilities: ['BIM / VDC', 'Parametric design', 'Digital twins', 'Clash & 4D scheduling'] }
   ];
   const FALLBACK_PROJECTS = [
-    { id: 'meridian-logistics', name: 'Meridian Logistics', sector: 'Business banking', location: 'Columbus, OH', year: 2025, metric: '2 days', metricLabel: 'cut from payroll settlement', image: '/assets/bank/story-logistics.svg', blurb: 'Same-day ACH origination took two days out of a payroll run for 640 drivers.' },
-    { id: 'harrow-street', name: 'Harrow Street Residences', sector: 'Commercial lending', location: 'Columbus, OH', year: 2024, metric: '$14.2m', metricLabel: 'construction facility', image: '/assets/bank/story-property.svg', blurb: 'A construction facility drawn against surveyed progress rather than a fixed calendar.' },
-    { id: 'field-and-vine', name: 'Field & Vine Grocers', sector: 'Merchant services', location: 'Dublin, OH', year: 2025, metric: 'Next day', metricLabel: 'card settlement', image: '/assets/bank/story-retail.svg', blurb: 'Next-business-day settlement across nine stores, reconciled against the operating account automatically.' },
-    { id: 'ellis-household', name: 'The Ellis household', sector: 'Personal banking', location: 'Columbus, OH', year: 2026, metric: '4.35%', metricLabel: 'APY on savings', image: '/assets/bank/story-personal.svg', blurb: 'Round-ups and an automatic sweep the day after payday, with nothing to remember.' }
+    { id: 'meridian-logistics', name: 'Meridian Logistics', sector: 'Business banking', location: 'Columbus, OH', year: 2025, metric: '2 days', metricLabel: 'cut from payroll settlement', image: '/assets/img/story-logistics.png', blurb: 'Same-day ACH origination took two days out of a payroll run for 640 drivers.' },
+    { id: 'harrow-street', name: 'Harrow Street Residences', sector: 'Commercial lending', location: 'Columbus, OH', year: 2024, metric: '$14.2m', metricLabel: 'construction facility', image: '/assets/img/story-property.png', blurb: 'A construction facility drawn against surveyed progress rather than a fixed calendar.' },
+    { id: 'field-and-vine', name: 'Field & Vine Grocers', sector: 'Merchant services', location: 'Dublin, OH', year: 2025, metric: 'Next day', metricLabel: 'card settlement', image: '/assets/img/story-retail.png', blurb: 'Next-business-day settlement across nine stores, reconciled against the operating account automatically.' },
+    { id: 'ellis-household', name: 'The Ellis household', sector: 'Personal banking', location: 'Columbus, OH', year: 2026, metric: '4.35%', metricLabel: 'APY on savings', image: '/assets/img/story-personal.png', blurb: 'Round-ups and an automatic sweep the day after payday, with nothing to remember.' }
   ];
 
   function projectCard(p) {
@@ -74,12 +74,13 @@
     els.forEach((el) => io.observe(el));
   }
 
-  /* Studio contact details -------------------------------------------------
-     Pages are built with the values in src/data/site.json, so the static HTML
-     is already right. This only replaces them when the studio desk has changed
-     them, which is what lets an address change reach every page without a
-     deploy. */
-  const site = { email: '', phone: '', address: '', hours: '' };
+  /* Bank contact details ---------------------------------------------------
+     The address and the telephone numbers are not built into the pages: they
+     are per-deployment, set by an operator at the staff console, and served
+     from /api/site. Until one is set the page shows the phrase it was built
+     with ("our fraud line") or leaves the row out altogether, so nothing ever
+     reads as a blank or an invented number. */
+  const site = { email: '', phone: '', address: '', hours: '', fraudPhone: '', internationalPhone: '' };
 
   const telHref = (value) => 'tel:' + String(value).replace(/[^+\d]/g, '');
 
@@ -92,31 +93,21 @@
       el.textContent = value;
       if (el.tagName === 'A') {
         if (key === 'email') el.href = 'mailto:' + value;
-        if (key === 'phone') el.href = telHref(value);
+        if (key === 'phone' || key === 'fraudPhone' || key === 'internationalPhone') el.href = telHref(value);
       }
     });
-    // The studio address and telephone are optional. A row appears only once
-    // there is something to put in it, so an unset detail is absent rather
-    // than an empty label.
+    // Every contact detail is optional. A row appears only once there is
+    // something to put in it, so an unset detail is absent rather than a
+    // label with a blank beside it.
+    //
+    // Visibility only: the text is the business of the [data-site] pass above,
+    // which is why a <dt> label carrying this marker keeps its own words.
     $$('[data-site-row]').forEach((row) => {
-      const key = row.getAttribute('data-site-row');
-      const value = values[key];
-      row.hidden = !value;
-      if (!value) return;
-      const target = row.querySelector('[data-site="' + key + '"]') || row;
-      target.textContent = value;
-      const link = row.tagName === 'A' ? row : row.querySelector('a');
-      if (link && key === 'phone') link.href = telHref(value);
+      row.hidden = !values[row.getAttribute('data-site-row')];
     });
   }
 
   async function hydrateSite() {
-    // Seed from the page itself, so a message that quotes the studio address
-    // is right even before the request comes back.
-    $$('[data-site]').forEach((el) => {
-      const key = el.getAttribute('data-site');
-      if (!site[key]) site[key] = el.textContent.trim();
-    });
     try {
       applySite(await fetchJSON('/api/site'));
     } catch (e) {

@@ -362,13 +362,16 @@ async function withApp(env, fn) {
         assert.strictEqual(before.body.email, defaults.email, 'an empty row falls back to the built-in values');
         assert.strictEqual(before.body.source, 'database');
 
+        assert.strictEqual(before.body.phone, '', 'a telephone number nobody has set is blank, not invented');
+        assert.strictEqual(before.body.address, '', 'and so is the address');
+
         sb.db.site_settings.rows[0].email = 'desk@example.com';
         sb.db.site_settings.rows[0].phone = '+31 (0)20 111 2222';
         const after = await req(base, 'GET', '/api/site');
         assert.strictEqual(after.body.email, 'desk@example.com');
         assert.strictEqual(after.body.phone, '+31 (0)20 111 2222');
-        assert.strictEqual(after.body.address, defaults.address, 'a field left blank keeps the built-in value');
-        console.log('  ok  edited contact details are served, blanks fall back');
+        assert.strictEqual(after.body.address, '', 'a field left blank stays blank, so the page leaves its row out');
+        console.log('  ok  edited contact details are served, unset details stay blank');
       }
     );
     // And with no table at all the site still knows its own address.

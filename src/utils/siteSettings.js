@@ -1,53 +1,94 @@
 'use strict';
 
 /**
- * The studio's contact details.
+ * The bank's public contact details, as one record.
  *
- * Pages are built with the values in src/data/site.json, so the static HTML is
- * always correct on its own. The studio desk can then change them, and the
- * change is stored in `site_settings` and picked up by every page on its next
- * load, with no rebuild and no deploy.
+ * There are two places an operator can set these, for historical reasons the
+ * site should not have to care about:
  *
- * A database that has not run the migration simply has no row, and the
- * defaults stand.
+ *   - the bank's staff console, under Settings, which writes the `settings`
+ *     collection and therefore works on JSON files as well as on Supabase;
+ *   - the client services desk at /admin, which writes the `site_settings`
+ *     table directly and needs Supabase.
+ *
+ * The console wins where it has a value, because it is the one that works
+ * everywhere. Whatever it leaves blank falls through to the desk, and then to
+ * the built-in defaults in src/data/site.json - which are themselves blank for
+ * the address and the telephone numbers. Nothing here invents a value: a
+ * detail nobody has set comes back as '' and the page leaves its row out.
  */
 
 const defaults = require('../data/site.json');
 const { getSupabase } = require('./supabase');
+const bankSettings = require('../bank/settings');
 
 const TABLE = 'site_settings';
 const ROW_ID = 'default';
-const FIELDS = ['address', 'email', 'phone', 'hours'];
+/** What /api/site serves. The last two are read-only here; only the console sets them. */
+const FIELDS = ['address', 'email', 'phone', 'hours', 'fraudPhone', 'internationalPhone'];
 
-/**
- * Only the fields we own, trimmed.
- *
- * A blank stays blank rather than falling back, because the address and the
- * telephone are optional: the site shows them once they are set at the desk
- * and leaves the row out entirely until then.
- */
+/** Trimmed string, or '' - a stored value can be null, absent or whitespace. */
+const str = (value) => (value == null ? '' : String(value).trim());
+
+/** The first of these that has anything in it. */
+const firstOf = (...values) => values.map(str).find(Boolean) || '';
+
+/** Only the fields we own, trimmed, blanks preserved as blanks. */
 function normalise(values) {
   const out = {};
   FIELDS.forEach((key) => {
-    const supplied = values && values[key] != null ? String(values[key]).trim() : '';
-    out[key] = supplied || defaults[key] || '';
+    out[key] = firstOf(values && values[key], defaults[key]);
   });
   return out;
 }
 
-async function read() {
-  const supabase = getSupabase();
-  if (!supabase) return { ...normalise(defaults), source: 'defaults' };
+/** The contact block as the staff console has it. */
+function fromConsole(cfg) {
+  return {
+    address: str(cfg.mailingAddress),
+    email: str(cfg.supportEmail),
+    phone: str(cfg.supportPhone),
+    hours: str(cfg.supportHours),
+    fraudPhone: str(cfg.fraudPhone),
+    internationalPhone: str(cfg.internationalPhone),
+  };
+}
 
+async function read() {
+  let console_ = {};
   try {
-    const rows = await supabase.select(TABLE, `select=*&id=eq.${ROW_ID}&limit=1`);
-    if (!rows.length) return { ...normalise(defaults), source: 'defaults' };
-    return { ...normalise(rows[0]), source: 'database' };
+    console_ = fromConsole(await bankSettings.get());
   } catch (err) {
-    // The table arrives with 0001_init.sql. Without it the site still has
-    // every detail it needs; it just cannot be edited from the desk.
-    return { ...normalise(defaults), source: 'defaults' };
+    // The settings collection is optional; the desk and the defaults stand.
   }
+
+  let desk = {};
+  let source = 'defaults';
+  const supabase = getSupabase();
+  if (supabase) {
+    try {
+      const rows = await supabase.select(TABLE, `select=*&id=eq.${ROW_ID}&limit=1`);
+      if (rows.length) {
+        desk = rows[0];
+        source = 'database';
+      }
+    } catch (err) {
+      // The table arrives with 0001_init.sql. Without it the console is still
+      // able to set everything; these details just cannot be edited at /admin.
+    }
+  }
+  // "Has a value" is not the same as "somebody set it": the console's support
+  // email is seeded from the institution's own, so taking every non-empty
+  // console value as an override would let that seed outrank an address a
+  // person actually typed at the desk. A console value counts as configured
+  // only where it differs from what we ship, and only then does it win.
+  const configured = (key) => (console_[key] && console_[key] !== str(defaults[key]) ? console_[key] : '');
+
+  if (FIELDS.some(configured)) source = 'settings';
+
+  const merged = {};
+  FIELDS.forEach((key) => { merged[key] = firstOf(configured(key), desk[key], console_[key], defaults[key]); });
+  return { ...merged, source };
 }
 
 module.exports = { read, normalise, defaults, FIELDS, TABLE, ROW_ID };

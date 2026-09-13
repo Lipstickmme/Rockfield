@@ -6,25 +6,31 @@
    ========================================================================== */
 
 :root {
-  /* Ink and paper */
-  --rf-ink: #14181d;
-  --rf-ink-2: #3f464f;
-  --rf-ink-3: #6b7280;
-  --rf-ink-4: #9aa1ab;
-  --rf-paper: #f7f5f1;
+  /* Ink and paper.
+
+     Lifted off the old warm grey: paper is a cool near-white, the surfaces are
+     pure white, and the rules are lighter. The page reads brighter and the
+     cards actually separate from it, which they did not when both were beige.
+     Ink went down rather than up - on a brighter ground the old near-black was
+     harsher than it needed to be. */
+  --rf-ink: #101725;
+  --rf-ink-2: #3d4757;
+  --rf-ink-3: #6a7587;
+  --rf-ink-4: #9aa4b4;
+  --rf-paper: #f4f7fb;
   --rf-surface: #ffffff;
-  --rf-surface-2: #fbfaf7;
-  --rf-surface-3: #f2efe9;
-  --rf-line: #e3ded4;
-  --rf-line-2: #efebe3;
+  --rf-surface-2: #f8fafd;
+  --rf-surface-3: #eef2f8;
+  --rf-line: #dfe6f0;
+  --rf-line-2: #edf1f7;
 
   /* Brand */
   --rf-navy: #11213a;
   --rf-navy-2: #1b3457;
-  --rf-navy-3: #294a77;
+  --rf-navy-3: #2d5c93;
   --rf-brass: #b08341;
   --rf-brass-2: #caa062;
-  --rf-brass-soft: #f2e6d2;
+  --rf-brass-soft: #f6ecda;
 
   /* Money */
   --rf-credit: #1b7a53;
@@ -36,11 +42,30 @@
   --rf-info: #1f5c8f;
   --rf-info-soft: #e5eff7;
 
-  --rf-radius: 14px;
-  --rf-radius-sm: 9px;
-  --rf-radius-lg: 22px;
-  --rf-shadow: 0 1px 2px rgba(20, 24, 29, .05), 0 10px 30px -18px rgba(20, 24, 29, .3);
-  --rf-shadow-lg: 0 24px 60px -30px rgba(17, 33, 58, .45);
+  --rf-radius: 16px;
+  --rf-radius-sm: 10px;
+  --rf-radius-lg: 24px;
+  /* Two lights rather than one: a tight contact shadow that sits the card on
+     the page, and a wide soft one that gives it somewhere to sit. */
+  --rf-shadow: 0 1px 2px rgba(16, 23, 37, .04), 0 12px 28px -16px rgba(16, 23, 37, .22);
+  --rf-shadow-lg: 0 2px 4px rgba(16, 23, 37, .04), 0 32px 64px -28px rgba(17, 33, 58, .38);
+  --rf-shadow-hover: 0 2px 6px rgba(16, 23, 37, .06), 0 26px 50px -22px rgba(17, 33, 58, .34);
+
+  /* Glass. One set of values so every frosted surface is the same material:
+     a translucent white, a blurred backdrop, a bright top edge where the light
+     catches and a darker rule underneath. */
+  --rf-glass-bg: rgba(255, 255, 255, .62);
+  --rf-glass-line: rgba(255, 255, 255, .75);
+  --rf-glass-blur: saturate(180%) blur(18px);
+  --rf-glass-shadow: 0 1px 0 rgba(255, 255, 255, .6) inset, 0 18px 40px -22px rgba(17, 33, 58, .5);
+  /* The same material over a photograph or a navy panel, where white glass
+     would wash the type out instead of holding it. */
+  --rf-glass-dark-bg: rgba(14, 26, 46, .42);
+  --rf-glass-dark-line: rgba(255, 255, 255, .18);
+
+  /* One easing for everything that moves, so the site has a single tempo. */
+  --rf-ease: cubic-bezier(.2, .7, .3, 1);
+  --rf-tilt: 240ms var(--rf-ease);
   --rf-sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --rf-display: "Space Grotesk", Georgia, serif;
   --rf-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -162,12 +187,18 @@ body.rf-site {
 
 .rf-top {
   position: sticky; top: 0; z-index: 30;
-  background: rgba(247, 245, 241, .88);
-  backdrop-filter: saturate(140%) blur(10px);
+  background: rgba(255, 255, 255, .84);
   border-bottom: 1px solid var(--rf-line);
   padding: 12px 26px;
   display: flex; align-items: center; gap: 14px;
+}@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .rf-top {
+    background: var(--rf-glass-bg);
+    -webkit-backdrop-filter: var(--rf-glass-blur);
+    backdrop-filter: var(--rf-glass-blur);
+  }
 }
+
 .rf-top h1 { margin: 0; font-family: var(--rf-display); font-size: 20px; letter-spacing: -.02em; }
 .rf-top .rf-top-sub { font-size: 12.5px; color: var(--rf-ink-3); margin: 0; }
 .rf-top-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
@@ -189,6 +220,18 @@ body.rf-site {
   border: 1px solid var(--rf-line);
   border-radius: var(--rf-radius);
   box-shadow: var(--rf-shadow);
+}
+/* Cards that are a link, or a thing you pick, lift and lean under the cursor.
+   A card that is only a container does not - the tilt means "this responds",
+   and spending it on everything spends it on nothing. */
+.rf-card.interactive, a.rf-card, .rf-product, .rf-acct {
+  transition: transform var(--rf-tilt), box-shadow var(--rf-tilt), border-color var(--rf-tilt);
+  transform: perspective(900px);
+}
+.rf-card.interactive:hover, a.rf-card:hover, .rf-product:hover {
+  transform: perspective(900px) translateY(-4px) rotateX(2.2deg);
+  box-shadow: var(--rf-shadow-hover);
+  border-color: #cfdaeb;
 }
 .rf-card + .rf-card { margin-top: 16px; }
 .rf-card-head {
@@ -243,27 +286,78 @@ body.rf-site {
 
 /* -------------------------------------------------------------- buttons -- */
 
+/* Buttons have a top-lit gradient rather than a flat fill, a hairline of the
+   surface colour along the top edge, and a coloured shadow in their own hue -
+   which is what keeps them looking like objects on the page instead of
+   rectangles painted on it. */
 .rf-btn {
+  position: relative;
   display: inline-flex; align-items: center; justify-content: center; gap: 7px;
-  padding: 9px 16px; border-radius: 999px;
-  border: 1px solid transparent; background: var(--rf-navy); color: #fff;
+  padding: 10px 18px; border-radius: 999px;
+  border: 1px solid transparent;
+  background: linear-gradient(180deg, var(--rf-navy-2) 0%, var(--rf-navy) 100%);
+  color: #fff;
   font: 600 13.5px/1 var(--rf-sans); cursor: pointer; text-decoration: none;
-  transition: transform .12s ease, background .15s ease, box-shadow .15s ease;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .16) inset, 0 6px 16px -8px rgba(17, 33, 58, .7);
+  transition: transform var(--rf-tilt), box-shadow var(--rf-tilt), background var(--rf-tilt), filter var(--rf-tilt);
+  transform: perspective(600px);
   white-space: nowrap;
 }
-.rf-btn:hover { background: var(--rf-navy-2); }
-.rf-btn:active { transform: translateY(1px); }
+/* The tilt. Lifted a little, leaned back a little - it reads as the button
+   coming up to meet the cursor rather than as the page moving. */
+.rf-btn:hover {
+  transform: perspective(600px) translateY(-2px) rotateX(7deg);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .2) inset, 0 14px 26px -10px rgba(17, 33, 58, .62);
+  filter: brightness(1.08);
+}
+.rf-btn:active { transform: perspective(600px) translateY(0) rotateX(0); filter: brightness(.97); box-shadow: 0 1px 0 rgba(255, 255, 255, .12) inset, 0 3px 8px -4px rgba(17, 33, 58, .6); }
+.rf-btn:focus-visible { outline: 2px solid var(--rf-brass-2); outline-offset: 3px; }
 .rf-btn[disabled], .rf-btn.is-busy { opacity: .55; pointer-events: none; }
-.rf-btn.ghost { background: var(--rf-surface); color: var(--rf-ink); border-color: var(--rf-line); }
-.rf-btn.ghost:hover { background: var(--rf-surface-3); }
-.rf-btn.brass { background: var(--rf-brass); color: #241706; }
-.rf-btn.brass:hover { background: #9c7238; color: #fff; }
-.rf-btn.danger { background: var(--rf-debit); }
-.rf-btn.danger:hover { background: #8a2b23; }
-.rf-btn.sm { padding: 6px 12px; font-size: 12.5px; }
+
+.rf-btn.ghost {
+  background: linear-gradient(180deg, #fff 0%, var(--rf-surface-2) 100%);
+  color: var(--rf-ink); border-color: var(--rf-line);
+  box-shadow: 0 1px 0 #fff inset, 0 6px 14px -10px rgba(16, 23, 37, .5);
+}
+.rf-btn.ghost:hover { background: linear-gradient(180deg, #fff 0%, var(--rf-surface-3) 100%); border-color: #cbd6e6; }
+
+.rf-btn.brass {
+  background: linear-gradient(180deg, var(--rf-brass-2) 0%, var(--rf-brass) 100%);
+  color: #241706;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .35) inset, 0 8px 20px -10px rgba(176, 131, 65, .85);
+}
+.rf-btn.brass:hover { box-shadow: 0 1px 0 rgba(255, 255, 255, .4) inset, 0 16px 28px -12px rgba(176, 131, 65, .9); }
+
+/* The glass button, for use over a photograph where a solid ghost button
+   would punch a white hole in the picture. */
+.rf-btn.glass {
+  background: rgba(255, 255, 255, .12);
+  border-color: rgba(255, 255, 255, .4); color: #fff;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .25) inset, 0 10px 24px -14px rgba(0, 0, 0, .8);
+}
+.rf-btn.glass:hover { background: rgba(255, 255, 255, .22); border-color: rgba(255, 255, 255, .6); }
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .rf-btn.glass { -webkit-backdrop-filter: var(--rf-glass-blur); backdrop-filter: var(--rf-glass-blur); }
+}
+
+.rf-btn.danger {
+  background: linear-gradient(180deg, #b8453a 0%, var(--rf-debit) 100%);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .18) inset, 0 8px 18px -10px rgba(163, 53, 43, .8);
+}
+.rf-btn.danger:hover { background: linear-gradient(180deg, #a93b31 0%, #8a2b23 100%); }
+
+.rf-btn.lg { padding: 13px 26px; font-size: 15px; }
+.rf-btn.sm { padding: 7px 13px; font-size: 12.5px; }
 .rf-btn.block { width: 100%; }
-.rf-btn.link { background: none; color: var(--rf-navy-3); padding: 4px 2px; text-decoration: underline; text-underline-offset: 3px; }
-.rf-btn.link:hover { background: none; color: var(--rf-navy); }
+
+/* No tilt on the two that are not objects: a link is text, and a full-width
+   button leaning back looks like the form is falling over. */
+.rf-btn.block:hover { transform: perspective(600px) translateY(-2px); }
+.rf-btn.link {
+  background: none; color: var(--rf-navy-3); padding: 4px 2px;
+  text-decoration: underline; text-underline-offset: 3px; box-shadow: none;
+}
+.rf-btn.link:hover { background: none; color: var(--rf-navy); transform: none; filter: none; box-shadow: none; }
 
 .rf-icon-btn {
   width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center;
@@ -362,7 +456,7 @@ body.rf-site {
   background: var(--rf-surface); box-shadow: var(--rf-shadow);
   transition: transform .15s ease, box-shadow .15s ease;
 }
-.rf-acct:hover { transform: translateY(-2px); box-shadow: var(--rf-shadow-lg); }
+.rf-acct:hover { transform: perspective(900px) translateY(-4px) rotateX(2.2deg); box-shadow: var(--rf-shadow-hover); }
 .rf-acct .top { display: flex; align-items: center; gap: 9px; margin-bottom: 10px; }
 .rf-acct .top strong { font-size: 14px; }
 .rf-acct .no { font-family: var(--rf-mono); font-size: 12px; color: var(--rf-ink-3); }
@@ -415,15 +509,18 @@ body.rf-site {
 /* --------------------------------------------------------------- modals -- */
 
 .rf-modal-backdrop {
-  position: fixed; inset: 0; background: rgba(12, 18, 28, .55);
-  backdrop-filter: blur(3px); z-index: 90;
+  position: fixed; inset: 0; background: rgba(12, 18, 28, .52);
+  -webkit-backdrop-filter: saturate(120%) blur(8px);
+  backdrop-filter: saturate(120%) blur(8px); z-index: 90;
   display: flex; align-items: flex-start; justify-content: center;
   padding: 5vh 16px; overflow-y: auto;
 }
 .rf-modal {
   background: var(--rf-surface); border-radius: var(--rf-radius-lg);
-  width: 100%; max-width: 560px; box-shadow: var(--rf-shadow-lg);
-  animation: rf-rise .22s cubic-bezier(.2, .8, .3, 1);
+  border: 1px solid var(--rf-glass-line);
+  width: 100%; max-width: 560px;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .7) inset, 0 40px 80px -30px rgba(8, 16, 30, .6);
+  animation: rf-rise .26s var(--rf-ease);
 }
 .rf-modal.wide { max-width: 860px; }
 .rf-modal.narrow { max-width: 440px; }
@@ -563,6 +660,26 @@ body.rf-site {
 }
 .rf-devcode code { font-family: var(--rf-mono); font-size: 15px; font-weight: 600; letter-spacing: .18em; }
 
+/* ------------------------------------------------------ reduced motion -- */
+
+/* Everything above that moves, stops.
+
+   The tilt is decoration; the state it signals is carried by the shadow and
+   the border colour, which stay. Blur is not motion and is left alone. */
+@media (prefers-reduced-motion: reduce) {
+  .rf-btn,
+  .rf-card.interactive, a.rf-card, .rf-product, .rf-acct {
+    transition-property: box-shadow, background, border-color, filter;
+    transform: none;
+  }
+  .rf-btn:hover, .rf-btn:active,
+  .rf-card.interactive:hover, a.rf-card:hover, .rf-product:hover, .rf-acct:hover {
+    transform: none;
+  }
+  .rf-modal { animation: none; }
+  .rf-toast { animation: none; }
+}
+
 /* ==========================================================================
    Marketing pages (the public bank site)
    ========================================================================== */
@@ -570,22 +687,89 @@ body.rf-site {
 .rf-hero {
   position: relative; padding: clamp(70px, 11vw, 130px) 0 clamp(50px, 7vw, 90px);
   background: linear-gradient(160deg, #16294a 0%, #0e1c32 55%, #0a1424 100%);
-  color: #eef2f8; overflow: hidden;
+  color: #eef2f8; overflow: hidden; isolation: isolate;
+}
+.rf-hero.tall { padding: clamp(88px, 13vw, 168px) 0 clamp(56px, 8vw, 96px); }
+.rf-hero.compact { padding: clamp(58px, 8vw, 96px) 0 clamp(38px, 5vw, 62px); }
+
+/* The photograph, as a photograph.
+
+   It used to sit at 30% opacity over the gradient, which left it looking like
+   a mistake rather than a picture. Now it is opaque and the scrim below does
+   the work of keeping type legible - which is the same job done in the right
+   order. */
+.rf-hero-photo {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; object-position: center;
+  z-index: -2;
+}
+
+/* The scrim. Dark and near-opaque on the left where the words are, clearing to
+   almost nothing on the right so the picture is still a picture. The second
+   gradient keeps the bottom edge dark enough for the glass panel to read. */
+.rf-hero.has-photo::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    linear-gradient(100deg, rgba(8, 16, 30, .94) 0%, rgba(9, 18, 33, .84) 38%, rgba(10, 20, 36, .52) 68%, rgba(10, 20, 36, .34) 100%),
+    linear-gradient(to top, rgba(8, 16, 30, .7) 0%, transparent 45%);
 }
 .rf-hero::after {
-  content: ""; position: absolute; inset: 0; opacity: .55; pointer-events: none;
+  content: ""; position: absolute; inset: 0; opacity: .55; pointer-events: none; z-index: -1;
   background:
     radial-gradient(55% 45% at 78% 12%, rgba(176, 131, 65, .3), transparent 70%),
     radial-gradient(45% 45% at 8% 88%, rgba(41, 74, 119, .55), transparent 70%);
 }
+/* Over a photograph the brass wash is a tint, not a light source. */
+.rf-hero.has-photo::after { opacity: .3; }
+
+/* The two pages with no photograph of their own get the mark instead, drawn
+   large and faint off the right edge. */
+.rf-hero-mark {
+  position: absolute; top: 50%; right: -40px; transform: translateY(-50%);
+  color: #fff; opacity: .07; z-index: -1; pointer-events: none; line-height: 0;
+}
+
 .rf-hero .wrap { position: relative; z-index: 1; }
+.rf-hero-copy { max-width: 42rem; }
 .rf-hero h1 { font-family: var(--rf-display); font-size: clamp(36px, 6vw, 66px); line-height: 1.04; letter-spacing: -.035em; margin: 0 0 18px; color: #fff; }
-.rf-hero p.lede { font-size: clamp(16px, 1.6vw, 19px); color: #c3d0e2; max-width: 56ch; margin: 0 0 28px; }
+.rf-hero p.lede { font-size: clamp(16px, 1.6vw, 19px); color: #d3dcea; max-width: 56ch; margin: 0 0 28px; }
 .rf-eyebrow { display: inline-flex; align-items: center; gap: 8px; font-size: 11.5px; letter-spacing: .18em; text-transform: uppercase; color: var(--rf-brass-2); font-weight: 600; margin-bottom: 16px; }
-.rf-hero-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 36px; }
-.rf-hero-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; border-top: 1px solid rgba(255,255,255,.14); padding-top: 24px; }
-.rf-hero-stats .k { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #93a6c1; }
-.rf-hero-stats .v { font-family: var(--rf-display); font-size: 25px; letter-spacing: -.02em; color: #fff; }
+.rf-hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+
+/* The figures, on glass. Sitting them on a frosted panel over the photograph
+   is what stops them reading as four numbers floating on a building. */
+.rf-hero-stats {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px 20px; margin-top: clamp(40px, 6vw, 72px); padding: 22px 26px;
+  border-radius: var(--rf-radius-lg);
+}
+.rf-hero-stats .k { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #a7b8d0; }
+.rf-hero-stats .v { font-family: var(--rf-display); font-size: clamp(22px, 2.4vw, 27px); letter-spacing: -.02em; color: #fff; }
+
+/* ---------------------------------------------------------------- glass -- */
+
+/* One frosted material, used wherever something floats over something else.
+
+   backdrop-filter is the whole effect, and it is not universal, so the
+   background colour underneath is opaque enough to carry the panel on its own
+   where the filter does nothing. @supports then thins it out and turns the
+   blur on, rather than the other way round. */
+/* The panel form, for glass that floats over a photograph. The two sticky
+   bars use the same tokens but keep their own rules, because a nav wants one
+   border along the bottom rather than four around it. */
+.rf-glass {
+  background: rgba(17, 33, 58, .72);
+  border: 1px solid var(--rf-glass-dark-line);
+  box-shadow: var(--rf-glass-shadow);
+}
+
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .rf-glass {
+    background: var(--rf-glass-dark-bg);
+    -webkit-backdrop-filter: var(--rf-glass-blur);
+    backdrop-filter: var(--rf-glass-blur);
+  }
+}
 
 .rf-section { padding: clamp(52px, 7vw, 92px) 0; }
 .rf-section.alt { background: var(--rf-surface); border-block: 1px solid var(--rf-line); }
@@ -593,9 +777,9 @@ body.rf-site {
 .rf-section .section-lede { color: var(--rf-ink-3); font-size: 16px; max-width: 60ch; margin: 0 0 34px; }
 
 .rf-product {
-  display: flex; flex-direction: column; padding: 24px;
+  display: flex; flex-direction: column; padding: 26px;
   background: var(--rf-surface); border: 1px solid var(--rf-line);
-  border-radius: var(--rf-radius); box-shadow: var(--rf-shadow); height: 100%;
+  border-radius: var(--rf-radius-lg); box-shadow: var(--rf-shadow); height: 100%;
 }
 .rf-product .rate { font-family: var(--rf-display); font-size: 34px; letter-spacing: -.03em; color: var(--rf-navy); }
 .rf-product .rate small { font-size: 13px; color: var(--rf-ink-3); letter-spacing: 0; }
@@ -617,8 +801,16 @@ body.rf-site {
 .rf-disclosure { font-size: 11.5px; color: var(--rf-ink-3); line-height: 1.7; }
 
 .rf-marketing-nav {
-  position: sticky; top: 0; z-index: 50; background: rgba(247,245,241,.9);
-  backdrop-filter: saturate(150%) blur(10px); border-bottom: 1px solid var(--rf-line);
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(255, 255, 255, .82);
+  border-bottom: 1px solid var(--rf-line);
+}
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .rf-marketing-nav {
+    background: var(--rf-glass-bg);
+    -webkit-backdrop-filter: var(--rf-glass-blur);
+    backdrop-filter: var(--rf-glass-blur);
+  }
 }
 .rf-marketing-nav .inner { display: flex; align-items: center; gap: 22px; padding: 13px 0; }
 .rf-marketing-nav .brandline { display: flex; align-items: center; gap: 10px; text-decoration: none; }
@@ -689,6 +881,33 @@ body.rf-site {
   .rf-statement-summary { grid-template-columns: repeat(2, 1fr); }
   .rf-marketing-nav nav { display: none; }
   .rf-scrim { position: fixed; inset: 0; background: rgba(10, 16, 26, .5); z-index: 39; }
+
+  /* On a narrow screen the copy fills the width, so the scrim has to cover it
+     rather than clearing to the right. */
+  .rf-hero.has-photo::before {
+    background:
+      linear-gradient(180deg, rgba(8, 16, 30, .82) 0%, rgba(9, 18, 33, .88) 100%),
+      linear-gradient(to top, rgba(8, 16, 30, .7) 0%, transparent 55%);
+  }
+  .rf-hero-stats { padding: 18px 18px; gap: 14px; }
+  /* The watermark would otherwise push the page sideways. */
+  .rf-hero-mark { right: -120px; opacity: .05; }
+  .rf-hero-actions .rf-btn { flex: 1 1 auto; justify-content: center; }
+}
+
+/* The nav at phone width.
+
+   The bank's full name plus two buttons does not fit across 390px, and the
+   name was wrapping onto three lines while the buttons ran off the edge. The
+   name shortens to the mark and "Rockfield", and "Open an account" gives way
+   to Sign in - the page below is one long argument for opening an account, so
+   the button is not the only route to it. */
+@media (max-width: 620px) {
+  .rf-marketing-nav .inner { gap: 12px; padding: 10px 0; }
+  .rf-marketing-nav .brandline strong { font-size: 15px; white-space: nowrap; }
+  .rf-marketing-nav .brandline .rf-full-name { display: none; }
+  .rf-marketing-nav .brandline small { display: none; }
+  .rf-marketing-nav .actions .rf-btn.ghost { display: none; }
 }
 
 @media (max-width: 620px) {
@@ -707,16 +926,21 @@ body.rf-site {
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-rf-theme="light"]) {
-    --rf-ink: #edeef1;
-    --rf-ink-2: #c3c7ce;
-    --rf-ink-3: #949aa5;
-    --rf-ink-4: #6f7681;
-    --rf-paper: #0e1116;
-    --rf-surface: #161a21;
-    --rf-surface-2: #1b2029;
-    --rf-surface-3: #222833;
-    --rf-line: #2b323d;
-    --rf-line-2: #232932;
+    --rf-ink: #eef1f6;
+    --rf-ink-2: #c2c9d5;
+    --rf-ink-3: #949db0;
+    --rf-ink-4: #6f7889;
+    --rf-paper: #0b0f17;
+    --rf-surface: #141a25;
+    --rf-surface-2: #19202c;
+    --rf-surface-3: #212936;
+    --rf-line: #2a3342;
+    --rf-line-2: #222a37;
+    /* The glass inverts: a dark translucent pane with a faint light edge,
+       rather than a white one, which on a dark page reads as fog. */
+    --rf-glass-bg: rgba(20, 26, 37, .6);
+    --rf-glass-line: rgba(255, 255, 255, .1);
+    --rf-glass-shadow: 0 1px 0 rgba(255, 255, 255, .06) inset, 0 18px 40px -22px rgba(0, 0, 0, .9);
     --rf-credit-soft: #10291f;
     --rf-debit-soft: #2e1614;
     --rf-pending-soft: #2a2312;
@@ -724,8 +948,32 @@ body.rf-site {
     --rf-brass-soft: #2c2213;
     --rf-shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 30px -18px rgba(0, 0, 0, .8);
   }
-  :root:not([data-rf-theme="light"]) .rf-top { background: rgba(14, 17, 22, .88); }
-  :root:not([data-rf-theme="light"]) .rf-marketing-nav { background: rgba(14, 17, 22, .9); }
+  :root:not([data-rf-theme="light"]) .rf-top { background: rgba(11, 15, 23, .82); }
+  :root:not([data-rf-theme="light"]) .rf-marketing-nav { background: rgba(11, 15, 23, .82); }
+  /* The lift still reads on a dark page, but a light border does not: the
+     hover edge goes up in brightness instead of down. */
+  :root:not([data-rf-theme="light"]) .rf-card.interactive:hover,
+  :root:not([data-rf-theme="light"]) a.rf-card:hover,
+  :root:not([data-rf-theme="light"]) .rf-product:hover { border-color: #3b4759; }
+  :root:not([data-rf-theme="light"]) .rf-btn.ghost {
+    background: linear-gradient(180deg, var(--rf-surface-2) 0%, var(--rf-surface) 100%);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, .05) inset, 0 6px 14px -10px rgba(0, 0, 0, .8);
+  }
+  :root:not([data-rf-theme="light"]) .rf-btn.ghost:hover { background: linear-gradient(180deg, var(--rf-surface-3) 0%, var(--rf-surface-2) 100%); border-color: #3b4759; }
+  :root:not([data-rf-theme="light"]) .rf-modal { border-color: rgba(255, 255, 255, .08); }
+
+  /* The headline rate is navy, which on a dark card is very nearly the card.
+     Brass is the other brand colour and it holds at this size. */
+  :root:not([data-rf-theme="light"]) .rf-product .rate { color: var(--rf-brass-2); }
+
+  /* The primary button is navy on near-black, which reads as a hole rather
+     than a button. Lift the gradient until it sits above the surface. */
+  :root:not([data-rf-theme="light"]) .rf-btn {
+    background: linear-gradient(180deg, var(--rf-navy-3) 0%, var(--rf-navy-2) 100%);
+  }
+
+  /* Same problem in the other direction: a near-white rule over a dark card. */
+  :root:not([data-rf-theme="light"]) .rf-glass { border-color: rgba(255, 255, 255, .14); }
   :root:not([data-rf-theme="light"]) .rf-section.alt { background: var(--rf-surface); }
   :root:not([data-rf-theme="light"]) .rf-statement { background: var(--rf-surface); }
   :root:not([data-rf-theme="light"]) .rf-notice { color: #bcd6ea; }

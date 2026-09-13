@@ -29,7 +29,7 @@ function autoReply(text) {
     return 'That is squarely in our wheelhouse. Share a few details about the project and where it gets difficult, and we will point you to the right engineer.';
   }
   if (has('contact', 'call', 'phone', 'email', 'meet', 'speak')) {
-    return 'The fastest route is 1-800-762-5343, or the contact page. Leave your email here and a banker will come back to you the same business day.';
+    return 'The fastest route is the contact page, where our client services number and hours are listed. Leave your email here and a banker will come back to you the same business day.';
   }
   if (has('thanks', 'thank you', 'cheers', 'great')) {
     return 'Any time. Anything else I can help with?';

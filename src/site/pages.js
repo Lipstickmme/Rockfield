@@ -21,6 +21,7 @@ const site = require('../data/site.json');
 const images = require('./images');
 const { page } = require('./layout');
 const { marketingPage, icon, productCard } = require('../bank/site/layout');
+const logo = require('../bank/site/logo');
 const { BANK, PRODUCTS } = require('../bank/constants');
 
 const YEAR = new Date().getFullYear();
@@ -28,11 +29,21 @@ const money = (cents) => `$${(cents / 100).toLocaleString('en-US', { minimumFrac
 
 /* ------------------------------------------------------------- components -- */
 
-/** The page-top band on an interior page. */
+/**
+ * The page-top band on an interior page.
+ *
+ * Every page that has a photograph has its own - the slots in
+ * src/data/images.json are one-to-one with placements precisely so nobody
+ * meets the same picture twice. The two that do not (apply, disclosures) get
+ * the mark drawn large and faint instead, which is better than a tenth page
+ * borrowing a ninth page's photograph.
+ */
 function header({ eyebrow, title, lede, image }) {
   return `
-  <header class="rf-hero" style="padding-block:clamp(58px,8vw,96px) clamp(38px,5vw,62px)">
-    ${image ? `<img src="${image}" alt="" aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.22" />` : ''}
+  <header class="rf-hero compact ${image ? 'has-photo' : 'has-mark'}">
+    ${image
+      ? `<img class="rf-hero-photo" src="${image}" alt="" aria-hidden="true" />`
+      : `<span class="rf-hero-mark" aria-hidden="true">${logo.emblem({ height: 300, weight: 5 })}</span>`}
     <div class="wrap">
       <span class="rf-eyebrow">${eyebrow}</span>
       <h1 style="font-size:clamp(32px,4.6vw,52px)">${title}</h1>
@@ -75,7 +86,7 @@ function enquiryForm(id = 'contact-form', { heading, note } = {}) {
         <div class="honeypot" aria-hidden="true" style="position:absolute;left:-9999px"><label>Website<input type="text" name="website" tabindex="-1" autocomplete="off" /></label></div>
         <div class="form-status rf-small" data-form-status role="status" aria-live="polite"></div>
         <button type="submit" class="rf-btn block" data-submit>Send message</button>
-        <p class="rf-small rf-muted" style="margin:12px 0 0">A banker replies the same business day. For anything urgent, call <strong data-site="phone">${BANK.phone}</strong>.</p>
+        <p class="rf-small rf-muted" style="margin:12px 0 0">A banker replies the same business day. For anything urgent, call <strong data-site="phone">our client services desk</strong>.</p>
       </form>`;
 }
 
@@ -86,17 +97,19 @@ const tick = icon('check', 15);
 const ceo = leadership[0];
 
 const homeContent = `
-  <section class="rf-hero">
-    <img src="${images.underlay}" alt="" aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.3" />
+  <section class="rf-hero tall has-photo">
+    <img class="rf-hero-photo" src="${images.hero}" alt="" aria-hidden="true" fetchpriority="high" />
     <div class="wrap">
-      <span class="rf-eyebrow">${icon('shield', 15)} Member FDIC &middot; Established ${BANK.established}</span>
-      <h1>Banking built<br />on bedrock.</h1>
-      <p class="lede">Checking with no monthly fee. Savings at 4.35% APY. And a payments team that reads every outgoing wire before it leaves.</p>
-      <div class="rf-hero-actions">
-        <a class="rf-btn brass" href="/open-account">Open an account</a>
-        <a class="rf-btn ghost" href="/signin">Sign in to online banking</a>
+      <div class="rf-hero-copy">
+        <span class="rf-eyebrow">${icon('shield', 15)} Member FDIC &middot; Established ${BANK.established}</span>
+        <h1>Banking built<br />on bedrock.</h1>
+        <p class="lede">Checking with no monthly fee. Savings at 4.35% APY. And a payments team that reads every outgoing wire before it leaves.</p>
+        <div class="rf-hero-actions">
+          <a class="rf-btn brass lg" href="/open-account">Open an account</a>
+          <a class="rf-btn glass lg" href="/signin">Sign in to online banking</a>
+        </div>
       </div>
-      <div class="rf-hero-stats">
+      <div class="rf-hero-stats rf-glass">
         <div><div class="k">Savings APY</div><div class="v">4.35%</div></div>
         <div><div class="k">Monthly fee</div><div class="v">$0.00</div></div>
         <div><div class="k">Fee-free ATMs</div><div class="v">60,000</div></div>
@@ -147,7 +160,7 @@ const homeContent = `
           <p style="margin-top:26px"><a class="rf-btn ghost" href="/security-center">Visit the security centre</a></p>
         </div>
         <div>
-          <img src="${images.work}" alt="" loading="lazy" style="width:100%;border-radius:var(--rf-radius-lg);box-shadow:var(--rf-shadow-lg)" />
+          <img src="${images.homeSecurity}" alt="" loading="lazy" style="width:100%;border-radius:var(--rf-radius-lg);box-shadow:var(--rf-shadow-lg)" />
         </div>
       </div>
     </div>
@@ -161,7 +174,7 @@ const homeContent = `
       <div class="rf-grid cols-2">
         ${stories.slice(0, 2).map((story) => `
         <article class="rf-card">
-          <img src="${story.image}" alt="" loading="lazy" style="width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:var(--rf-radius) var(--rf-radius) 0 0;display:block" />
+          <img src="${images.story(story.image)}" alt="" loading="lazy" style="width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:var(--rf-radius) var(--rf-radius) 0 0;display:block" />
           <div class="rf-card-body">
             <span class="rf-eyebrow">${story.sector} &middot; ${story.location}</span>
             <h3 style="font-family:var(--rf-display);font-size:20px;margin:6px 0 8px">${story.name}</h3>
@@ -191,13 +204,13 @@ const homeContent = `
       <div class="rf-grid side" style="gap:44px;align-items:start">
         <div>
           <span class="rf-eyebrow">Talk to us</span>
-          <h2>A person, on the phone, in Columbus.</h2>
+          <h2>A person on the phone, not a menu.</h2>
           <dl class="rf-dl" style="max-width:460px">
-            <dt>Phone</dt><dd data-site="phone">${BANK.phone}</dd>
+            <dt data-site-row="phone" hidden>Phone</dt><dd data-site-row="phone" data-site="phone" hidden></dd>
             <dt>Email</dt><dd><a href="mailto:${site.email}" data-site="email">${site.email}</a></dd>
-            <dt>Hours</dt><dd data-site="hours">${site.hours}</dd>
-            <dt>Fraud, any hour</dt><dd>${BANK.fraudPhone}</dd>
-            <dt>Post</dt><dd data-site="address">${site.address}</dd>
+            <dt data-site-row="hours" hidden>Hours</dt><dd data-site-row="hours" data-site="hours" hidden></dd>
+            <dt data-site-row="fraudPhone" hidden>Fraud, any hour</dt><dd data-site-row="fraudPhone" data-site="fraudPhone" hidden></dd>
+            <dt data-site-row="address" hidden>Post</dt><dd data-site-row="address" data-site="address" hidden></dd>
           </dl>
           <div class="rf-notice warn" style="margin-top:22px">
             <div><strong>We will never ask for a code.</strong>Not by phone, text or email. Signed-in customers can use secure messages for anything about a specific account.</div>
@@ -215,7 +228,7 @@ const personalContent = `
     eyebrow: 'Personal banking',
     title: 'Accounts that behave.',
     lede: 'Checking, savings, certificates and a card, priced so the headline number is the one you actually get.',
-    image: images.capabilities,
+    image: images.personalHeader,
   })}
 
   <section class="rf-section">
@@ -252,7 +265,7 @@ const businessContent = `
     eyebrow: 'Business banking',
     title: 'Banking that keeps up with the business.',
     lede: 'Operating accounts, payroll, merchant settlement and credit, with dual approval and role-based access as standard.',
-    image: images.metrics,
+    image: images.businessHeader,
   })}
 
   <section class="rf-section">
@@ -275,7 +288,7 @@ const businessContent = `
       <div class="rf-grid cols-2">
         ${stories.map((story) => `
         <article class="rf-card">
-          <img src="${story.image}" alt="" loading="lazy" style="width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:var(--rf-radius) var(--rf-radius) 0 0;display:block" />
+          <img src="${images.story(story.image)}" alt="" loading="lazy" style="width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:var(--rf-radius) var(--rf-radius) 0 0;display:block" />
           <div class="rf-card-body">
             <span class="rf-eyebrow">${story.sector} &middot; ${story.location}</span>
             <h3 style="font-family:var(--rf-display);font-size:20px;margin:6px 0 8px">${story.name}</h3>
@@ -316,7 +329,7 @@ const ratesContent = `
     eyebrow: 'Rates and fees',
     title: 'What it pays, and what it costs.',
     lede: 'Everything on one page. Rates are variable and may change after account opening.',
-    image: images.work,
+    image: images.ratesHeader,
   })}
 
   <section class="rf-section">
@@ -364,14 +377,14 @@ const securityCentreContent = `
     eyebrow: 'Security centre',
     title: 'How we protect the account, and how you can.',
     lede: 'What runs on our side, what to switch on for yours, and what to do the moment something looks wrong.',
-    image: images.work,
+    image: images.securityHeader,
   })}
 
   <section class="rf-section">
     <div class="wrap">
       <div class="rf-notice bad">
         <div><strong>We will never ask for a one-time code.</strong>
-        Not by phone, not by text, not by email. If anyone asks for a code, a password or your full card number, hang up and call ${BANK.fraudPhone}.</div>
+        Not by phone, not by text, not by email. If anyone asks for a code, a password or your full card number, hang up and call <span data-site="fraudPhone">our fraud line</span>.</div>
       </div>
 
       <h2 style="margin-top:34px">What runs whether you think about it or not.</h2>
@@ -394,8 +407,8 @@ const securityCentreContent = `
 
       <h2 style="margin-top:48px">If something is wrong, call first.</h2>
       <div class="rf-grid cols-3">
-        <div class="rf-card rf-stat"><div class="k">Fraud line, 24/7</div><div class="v" style="font-size:20px">${BANK.fraudPhone}</div><div class="d">Cards, transfers, anything urgent</div></div>
-        <div class="rf-card rf-stat"><div class="k">General support</div><div class="v" style="font-size:20px" data-site="phone">${BANK.phone}</div><div class="d" data-site="hours">${site.hours}</div></div>
+        <div class="rf-card rf-stat"><div class="k">Fraud line, 24/7</div><div class="v" style="font-size:20px" data-site="fraudPhone">Open around the clock</div><div class="d">Cards, transfers, anything urgent</div></div>
+        <div class="rf-card rf-stat"><div class="k">General support</div><div class="v" style="font-size:20px" data-site="phone">Six days a week</div><div class="d" data-site="hours">${site.hours}</div></div>
         <div class="rf-card rf-stat"><div class="k">Report a phishing email</div><div class="v" style="font-size:16px">${BANK.securityEmail}</div><div class="d">Forward it; do not click anything in it</div></div>
       </div>
     </div>
@@ -408,7 +421,7 @@ const openAccountContent = `
     eyebrow: 'Open an account',
     title: 'Start the application.',
     lede: 'Tell us what you need and a banker calls you back the same business day to finish it with you.',
-    image: images.contact,
+    image: images.openAccountHeader,
   })}
 
   <section class="rf-section">
@@ -439,7 +452,7 @@ const careersContent = `
   ${header({
     eyebrow: 'Careers',
     title: 'Work somewhere the ledger has to balance.',
-    lede: 'Retail, payments, financial crime, compliance, lending and technology. Columbus, hybrid and remote.',
+    lede: 'Retail, payments, financial crime, compliance, lending and technology. On site, hybrid and remote.',
     image: images.careersHeader,
   })}
 
@@ -475,7 +488,7 @@ const careersContent = `
 /* ===================================================================== apply == */
 
 const applyContent = `
-  ${header({ eyebrow: 'Careers', title: 'Apply.', lede: 'One form, read by the people you would work with. We reply to everyone.', image: images.metrics })}
+  ${header({ eyebrow: 'Careers', title: 'Apply.', lede: 'One form, read by the people you would work with. We reply to everyone.' })}
 
   <section class="rf-section">
     <div class="wrap">
@@ -528,7 +541,7 @@ const contactContent = `
   ${header({
     eyebrow: 'Support',
     title: 'Talk to us.',
-    lede: 'Client services in Columbus, open six days a week, with a fraud line that never closes.',
+    lede: 'Client services six days a week, with a fraud line that never closes.',
     image: images.contactHeader,
   })}
 
@@ -537,12 +550,12 @@ const contactContent = `
       <div class="rf-grid side" style="gap:44px;align-items:start">
         <div>
           <dl class="rf-dl" style="max-width:480px">
-            <dt>Phone</dt><dd data-site="phone">${BANK.phone}</dd>
+            <dt data-site-row="phone" hidden>Phone</dt><dd data-site-row="phone" data-site="phone" hidden></dd>
             <dt>Email</dt><dd><a href="mailto:${site.email}" data-site="email">${site.email}</a></dd>
-            <dt>Hours</dt><dd data-site="hours">${site.hours}</dd>
-            <dt>Fraud, any hour</dt><dd>${BANK.fraudPhone}</dd>
-            <dt>International</dt><dd>${BANK.internationalPhone}</dd>
-            <dt>Post</dt><dd data-site="address">${site.address}</dd>
+            <dt data-site-row="hours" hidden>Hours</dt><dd data-site-row="hours" data-site="hours" hidden></dd>
+            <dt data-site-row="fraudPhone" hidden>Fraud, any hour</dt><dd data-site-row="fraudPhone" data-site="fraudPhone" hidden></dd>
+            <dt data-site-row="internationalPhone" hidden>International</dt><dd data-site-row="internationalPhone" data-site="internationalPhone" hidden></dd>
+            <dt data-site-row="address" hidden>Post</dt><dd data-site-row="address" data-site="address" hidden></dd>
           </dl>
 
           <h3 style="font-family:var(--rf-display);margin:30px 0 10px">Already banking with us?</h3>
@@ -561,14 +574,14 @@ const contactContent = `
 /* ===================================================================== legal == */
 
 const legalContent = `
-  ${header({ eyebrow: 'Legal', title: 'Disclosures.', lede: 'The agreements and notices that govern an account at Rockfield.', image: images.work })}
+  ${header({ eyebrow: 'Legal', title: 'Disclosures.', lede: 'The agreements and notices that govern an account at Rockfield.' })}
 
   <section class="rf-section">
     <div class="wrap" style="max-width:820px">
       <article class="rf-card"><div class="rf-card-body">
         <h2 id="privacy" style="font-family:var(--rf-display);margin-top:0;font-size:24px">Privacy notice</h2>
         <p class="rf-muted">${BANK.legalName} collects the information needed to open and run your accounts: your name, address, date of birth, Social Security number, identification documents, transaction history and the devices you use to reach us. We share it only with the service providers who help us run the bank, and with regulators and law enforcement where the law requires it. We do not sell it.</p>
-        <p class="rf-muted">You may limit marketing at any time under Alerts inside online banking, or by calling <span data-site="phone">${BANK.phone}</span>.</p>
+        <p class="rf-muted">You may limit marketing at any time under Alerts inside online banking, or by calling <span data-site="phone">client services</span>.</p>
 
         <h2 id="terms" style="font-family:var(--rf-display);font-size:24px">Online banking agreement</h2>
         <p class="rf-muted">Access to online banking is personal to you. Keep your password and one-time codes to yourself, tell us immediately if you think someone else has them, and review your statements. We may hold, delay or decline a payment where we reasonably suspect fraud, where it would breach a limit, or where sanctions screening requires a manual check. Where we decline one, the funds return to your available balance and you are told why.</p>
@@ -580,7 +593,7 @@ const legalContent = `
         <p class="rf-muted">For checks deposited through mobile deposit, the first $225 is generally available on the first business day after the day of deposit, and the remainder by the second business day. We may place a longer hold in the circumstances permitted by Regulation CC, and we will tell you when we do.</p>
 
         <h2 id="accessibility" style="font-family:var(--rf-display);font-size:24px">Accessibility</h2>
-        <p class="rf-muted">We aim to meet WCAG 2.2 AA across online banking. If any part of this site is difficult to use, tell us on <span data-site="phone">${BANK.phone}</span> or <a href="mailto:${site.email}" data-site="email">${site.email}</a> and we will help you complete what you were doing and fix the underlying problem.</p>
+        <p class="rf-muted">We aim to meet WCAG 2.2 AA across online banking. If any part of this site is difficult to use, tell us on <span data-site="phone">the client services line</span> or <a href="mailto:${site.email}" data-site="email">${site.email}</a> and we will help you complete what you were doing and fix the underlying problem.</p>
 
         <h2 id="demo" style="font-family:var(--rf-display);font-size:24px">About this application</h2>
         <p class="rf-muted">${BANK.legalName} is a fictional institution. This site is a demonstration of a banking application: the routing number, account numbers, card numbers and customer records used throughout are synthetic, reach no real financial institution, and no real money can move through it.</p>

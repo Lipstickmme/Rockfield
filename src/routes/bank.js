@@ -52,11 +52,15 @@ router.get('/config', asyncHandler(async (req, res) => {
       tagline: BANK.tagline,
       routingNumber: cfg.routingNumber || BANK.routingNumber,
       swift: BANK.swift,
-      phone: cfg.supportPhone || BANK.phone,
-      fraudPhone: BANK.fraudPhone,
+      // The contact block is operator-supplied and blank until it is set, so
+      // the app can tell "not configured" from "configured as this" and leave
+      // the row out rather than print an empty one.
+      phone: cfg.supportPhone || '',
+      fraudPhone: cfg.fraudPhone || '',
+      internationalPhone: cfg.internationalPhone || '',
       email: cfg.supportEmail || BANK.email,
-      address: BANK.address,
-      hours: BANK.hours,
+      address: cfg.mailingAddress || '',
+      hours: cfg.supportHours || '',
       fdicCert: BANK.fdicCert,
       nmls: BANK.nmls,
       established: BANK.established,

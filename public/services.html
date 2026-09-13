@@ -53,7 +53,7 @@
       </g>
     </svg></span>
         <span>
-          <strong>Rockfield National Bank</strong>
+          <strong>Rockfield<span class="rf-full-name"> National Bank</span></strong>
           <small>Member FDIC</small>
         </span>
       </a>
@@ -73,8 +73,8 @@
   </header>
 
   
-  <header class="rf-hero" style="padding-block:clamp(58px,8vw,96px) clamp(38px,5vw,62px)">
-    <img src="/assets/bank/personal.svg" alt="" aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.22" />
+  <header class="rf-hero compact has-photo">
+    <img class="rf-hero-photo" src="/assets/img/rockfamily.png" alt="" aria-hidden="true" />
     <div class="wrap">
       <span class="rf-eyebrow">Personal banking</span>
       <h1 style="font-size:clamp(32px,4.6vw,52px)">Accounts that behave.</h1>
@@ -226,7 +226,7 @@
             <h3 style="font-family:var(--rf-display);font-size:18px;margin:0 0 8px">Security and fraud</h3>
             <p class="rf-muted" style="margin:0 0 14px">Two-step verification, alerts that arrive in seconds and a fraud line that is open every hour of the year.</p>
             <ul style="list-style:none;padding:0;margin:0;display:grid;gap:8px">
-              <li class="rf-small" style="display:flex;gap:9px;align-items:flex-start"><span style="color:var(--rf-credit)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 12 5 5L20 6"/></svg></span><span>Two-step verification on sign-in and payments</span></li><li class="rf-small" style="display:flex;gap:9px;align-items:flex-start"><span style="color:var(--rf-credit)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 12 5 5L20 6"/></svg></span><span>Alerts within seconds of money moving</span></li><li class="rf-small" style="display:flex;gap:9px;align-items:flex-start"><span style="color:var(--rf-credit)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 12 5 5L20 6"/></svg></span><span>Held review on new recipients</span></li><li class="rf-small" style="display:flex;gap:9px;align-items:flex-start"><span style="color:var(--rf-credit)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 12 5 5L20 6"/></svg></span><span>24/7 fraud line on 1-800-762-5399</span></li>
+              <li class="rf-small" style="display:flex;gap:9px;align-items:flex-start"><span style="color:var(--rf-credit)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 12 5 5L20 6"/></svg></span><span>Two-step verification on sign-in and payments</span></li><li class="rf-small" style="display:flex;gap:9px;align-items:flex-start"><span style="color:var(--rf-credit)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 12 5 5L20 6"/></svg></span><span>Alerts within seconds of money moving</span></li><li class="rf-small" style="display:flex;gap:9px;align-items:flex-start"><span style="color:var(--rf-credit)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 12 5 5L20 6"/></svg></span><span>Held review on new recipients</span></li><li class="rf-small" style="display:flex;gap:9px;align-items:flex-start"><span style="color:var(--rf-credit)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 12 5 5L20 6"/></svg></span><span>A fraud line open every hour of the year</span></li>
             </ul>
           </div>
         </article>
@@ -272,7 +272,7 @@
             <strong style="color:#fff;font-family:var(--rf-display);font-size:16px">Rockfield National Bank</strong>
           </div>
           <p style="margin:0 0 12px;max-width:34ch">Banking built on bedrock. Personal and business banking since 1924.</p>
-          <p style="margin:0;font-size:12.5px">1 Rockfield Plaza, Suite 2200<br />Columbus, OH 43215</p>
+          <p style="margin:0;font-size:12.5px" data-site-row="address" hidden><span data-site="address"></span></p>
         </div>
         <div>
           <h5>Bank</h5>
@@ -285,7 +285,7 @@
           <h5>Support</h5>
           <a href="/support">Help centre</a>
           <a href="/security-center">Security centre</a>
-          <a href="tel:+18007625343">1-800-762-5343</a>
+          <a href="#" data-site-row="phone" data-site="phone" hidden></a>
           <a href="mailto:support@rockfieldbank.com">support@rockfieldbank.com</a>
         </div>
         <div>

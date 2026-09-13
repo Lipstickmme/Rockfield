@@ -15,6 +15,16 @@ const apiRoutes = require('./routes');
 
 const app = express();
 
+// Warm the settings cache at boot.
+//
+// The bank's telephone numbers and address live in settings, and the places
+// that print them inside a template literal read a cached snapshot rather than
+// awaiting. That snapshot is empty until something has read settings once, so
+// without this the first alert email after a cold start could say "contact us"
+// on a deployment that has a perfectly good number configured. Fire and
+// forget: a failure here is the same as not having read yet.
+require('./bank/settings').get().catch(() => {});
+
 // Trust proxy so client IPs are accurate behind a reverse proxy / load balancer.
 app.set('trust proxy', 1);
 app.disable('x-powered-by');

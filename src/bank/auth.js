@@ -18,6 +18,7 @@ const security = require('./security');
 const settings = require('./settings');
 const audit = require('./audit');
 const users = require('./users');
+const contact = require('./contact');
 
 const SESSION_COOKIE = 'rf_session';
 const CSRF_COOKIE = 'rf_csrf';
@@ -212,7 +213,7 @@ function requireAuth(req, res, next) {
   if (req.bankUser.status === 'suspended') {
     return res.status(403).json({
       error: 'account_suspended',
-      message: 'This account is suspended. Call us on 1-800-762-5343.',
+      message: `This account is suspended. Please ${contact.callSupport()}.`,
     });
   }
   return next();

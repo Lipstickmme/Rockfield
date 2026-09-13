@@ -22,6 +22,7 @@ const { db } = require('./db');
 const ids = require('./ids');
 const ledger = require('./ledger');
 const settings = require('./settings');
+const contact = require('./contact');
 const alerts = require('./alerts');
 const audit = require('./audit');
 const { BANK, REJECTION_REASONS } = require('./constants');
@@ -247,7 +248,7 @@ async function issueTransferOtp(user, transfer) {
     heading: 'Verify this transfer',
     intro: `Use code ${code} to release the transfer below. It expires in 10 minutes.`,
     rows: receiptRows(transfer),
-    footNote: 'If you did not start this transfer, do not enter the code - call us on ' + BANK.fraudPhone + '.',
+    footNote: `If you did not start this transfer, do not enter the code - ${contact.callFraud()}.`,
   });
   const exposeCode = require('../utils/config').showDevCodes();
   if (exposeCode) {
@@ -457,7 +458,7 @@ async function reject(transfer, { reasonCode = 'other', note = '', actorId = nul
       heading: 'We could not complete this transfer',
       intro: patch.reason_note,
       rows: receiptRows({ ...fresh, ...patch }),
-      body: 'The funds are back in your available balance. Call us on ' + BANK.phone + ' if you would like us to look at it with you.',
+      body: `The funds are back in your available balance. Please ${contact.callSupport()} if you would like us to look at it with you.`,
       severity: 'warning',
     });
   }

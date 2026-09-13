@@ -18,6 +18,7 @@ const accountsLib = require('../../bank/accounts');
 const transfersLib = require('../../bank/transfers');
 const security = require('../../bank/security');
 const settingsLib = require('../../bank/settings');
+const contact = require('../../bank/contact');
 const alerts = require('../../bank/alerts');
 const audit = require('../../bank/audit');
 const profile = require('./profileController');
@@ -317,7 +318,7 @@ const updateCustomer = asyncHandler(async (req, res) => {
     heading: 'Your details changed',
     intro: 'A member of our team updated the following on your account.',
     rows: changed.map((f) => ({ label: f.replace(/_/g, ' '), value: String(after[f] ?? '-') })),
-    footNote: `Not expecting this? Call ${BANK.phone}.`,
+    footNote: `Not expecting this? Please ${contact.callSupport()}.`,
   });
   res.json({ customer: usersLib.publicUser(after, 'admin') });
 });
@@ -342,7 +343,7 @@ const setCustomerStatus = asyncHandler(async (req, res) => {
     subject: `Your Rockfield account is now ${status}`,
     heading: `Account ${status}`,
     intro: reason || `Your online banking access is now ${status}.`,
-    footNote: `Questions? Call ${BANK.phone}.`,
+    footNote: `Questions? Please ${contact.callSupport()}.`,
     severity: status === 'active' ? 'info' : 'warning',
   });
   res.json({ customer: usersLib.publicUser(await db.users.findById(user.id), 'admin') });
@@ -404,7 +405,7 @@ const resetCustomerPassword = asyncHandler(async (req, res) => {
     heading: 'Your password was reset by our team',
     intro: 'Use the temporary password below to sign in, then choose your own.',
     rows: [{ label: 'Temporary password', value: temporary }],
-    footNote: `If you did not ask for this, call ${BANK.fraudPhone} immediately.`,
+    footNote: `If you did not ask for this, ${contact.callFraud()} immediately.`,
   });
   res.json({ temporaryPassword: temporary });
 });
