@@ -79,8 +79,14 @@ function matches(row, where) {
   });
 }
 
-/** Translate the same clause into PostgREST query parameters. */
-function toQuery(where = {}, opts = {}) {
+/**
+ * Translate a clause into PostgREST filter parameters.
+ *
+ * Separate from toQuery because a PATCH or a DELETE wants the filter alone -
+ * `select`, `order` and `limit` are meaningless on a write, and PostgREST
+ * rejects some of them outright.
+ */
+function toFilter(where = {}) {
   const parts = [];
   Object.entries(where).forEach(([field, cond]) => {
     const enc = (v) => encodeURIComponent(v);
@@ -106,6 +112,12 @@ function toQuery(where = {}, opts = {}) {
       }
     });
   });
+  return parts;
+}
+
+/** The same clause plus ordering and paging, for a read. */
+function toQuery(where = {}, opts = {}) {
+  const parts = toFilter(where);
   if (opts.order) parts.push(`order=${opts.order}`);
   if (opts.limit) parts.push(`limit=${opts.limit}`);
   if (opts.offset) parts.push(`offset=${opts.offset}`);
@@ -196,6 +208,28 @@ function createCollection(name) {
 
   const findById = (id) => (id ? findOne({ id }) : Promise.resolve(null));
 
+  /**
+   * Fetch many rows by id, as a Map keyed by id.
+   *
+   * For the "and who owns each of these" step that every list in the console
+   * needs. Written one at a time it is a round trip per row - a page of two
+   * hundred cards was two hundred sequential requests - and this is one, or a
+   * handful once the list is long enough to chunk.
+   *
+   * Chunked because the ids go into the URL as `id=in.(...)`: a few hundred
+   * UUIDs is several kilobytes, and proxies have opinions about that.
+   */
+  async function findByIds(ids, { chunkSize = 100 } = {}) {
+    const unique = Array.from(new Set((ids || []).filter(Boolean)));
+    const out = new Map();
+    for (let i = 0; i < unique.length; i += chunkSize) {
+      // eslint-disable-next-line no-await-in-loop
+      const rows = await find({ id: unique.slice(i, i + chunkSize) });
+      rows.forEach((row) => out.set(row.id, row));
+    }
+    return out;
+  }
+
   async function insert(record) {
     const row = { ...record };
     const supabase = getSupabase();
@@ -275,10 +309,35 @@ function createCollection(name) {
   }
 
   /** Patch every row matching a clause. Returns how many changed. */
+  /**
+   * Apply one patch to every row matching a clause.
+   *
+   * A single PATCH with a filter, rather than a read followed by a write per
+   * row. The count comes back from the rows PostgREST returns, so a caller can
+   * still tell how many it touched.
+   */
   async function updateWhere(where, patch) {
-    const rows = await find(where);
-    for (const row of rows) await update(row.id, patch);
-    return rows.length;
+    const supabase = getSupabase();
+    if (supabase) {
+      try {
+        const filter = toFilter(where).join('&');
+        const rows = await supabase.update(table, filter, patch);
+        return Array.isArray(rows) ? rows.length : 0;
+      } catch (err) {
+        if (!/does not exist|42P01|PGRST205/i.test(err.message)) throw err;
+      }
+    }
+    return chain(name, async () => {
+      const rows = await readFile(name);
+      let touched = 0;
+      const next = rows.map((row) => {
+        if (!matches(row, where)) return row;
+        touched += 1;
+        return { ...row, ...patch };
+      });
+      if (touched) await writeFile(name, next);
+      return touched;
+    });
   }
 
   async function remove(id) {
@@ -316,6 +375,7 @@ function createCollection(name) {
     find,
     findOne,
     findById,
+    findByIds,
     insert,
     insertMany,
     update,

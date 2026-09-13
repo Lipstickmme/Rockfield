@@ -642,16 +642,12 @@ const listTransfers = asyncHandler(async (req, res) => {
     if (req.query.type && t.type !== req.query.type) return false;
     return true;
   });
-  const userIds = Array.from(new Set(filtered.slice(offset, offset + limit).map((t) => t.user_id)));
-  const owners = new Map();
-  for (const id of userIds) {
-    const u = await db.users.findById(id);
-    if (u) owners.set(id, usersLib.publicUser(u, 'summary'));
-  }
+  const visible = filtered.slice(offset, offset + limit);
+  const owners = await db.users.findByIds(visible.map((t) => t.user_id));
   res.json({
-    transfers: filtered.slice(offset, offset + limit).map((t) => ({
+    transfers: visible.map((t) => ({
       ...transfersLib.publicTransfer(t),
-      customer: owners.get(t.user_id) || null,
+      customer: owners.has(t.user_id) ? usersLib.publicUser(owners.get(t.user_id), 'summary') : null,
     })),
     total: filtered.length,
     reasons: REJECTION_REASONS,
@@ -743,12 +739,14 @@ const reviewDeposit = asyncHandler(async (req, res) => {
 
 const listCards = asyncHandler(async (req, res) => {
   const rows = await db.cards.find({}, { order: 'created_at.desc', limit: 200 });
-  const out = [];
-  for (const card of rows) {
-    const owner = await db.users.findById(card.user_id);
-    out.push({ ...accountsLib.publicCard(card), customer: owner ? usersLib.publicUser(owner, 'summary') : null });
-  }
-  res.json({ cards: out });
+  // One query for every owner on the page, not one per card.
+  const owners = await db.users.findByIds(rows.map((c) => c.user_id));
+  res.json({
+    cards: rows.map((card) => ({
+      ...accountsLib.publicCard(card),
+      customer: owners.has(card.user_id) ? usersLib.publicUser(owners.get(card.user_id), 'summary') : null,
+    })),
+  });
 });
 
 const issueCard = asyncHandler(async (req, res) => {
@@ -851,16 +849,14 @@ const listAlerts = asyncHandler(async (req, res) => {
   const { limit, offset } = page(req.query);
   const rows = await db.alerts.find({}, { order: 'created_at.desc' });
   const filtered = req.query.status ? rows.filter((r) => r.status === req.query.status) : rows;
-  const out = [];
-  for (const row of filtered.slice(offset, offset + limit)) {
-    const owner = await db.users.findById(row.user_id);
-    out.push({
-      id: row.id, subject: row.subject, type: row.type, status: row.status, severity: row.severity,
-      createdAt: row.created_at, sentAt: row.sent_at, readAt: row.read_at, error: row.error,
-      customer: owner ? usersLib.publicUser(owner, 'summary') : null,
-      preview: row.preview,
-    });
-  }
+  const visible = filtered.slice(offset, offset + limit);
+  const owners = await db.users.findByIds(visible.map((r) => r.user_id));
+  const out = visible.map((row) => ({
+    id: row.id, subject: row.subject, type: row.type, status: row.status, severity: row.severity,
+    createdAt: row.created_at, sentAt: row.sent_at, readAt: row.read_at, error: row.error,
+    customer: owners.has(row.user_id) ? usersLib.publicUser(owners.get(row.user_id), 'summary') : null,
+    preview: row.preview,
+  }));
   res.json({ alerts: out, total: filtered.length, types: ALERT_TYPES });
 });
 
@@ -893,20 +889,23 @@ const sendAlert = asyncHandler(async (req, res) => {
 
   // A message the customer can also answer, not only an email that left.
   if (req.body.alsoMessage !== false) {
-    for (const recipient of recipients) {
-      await db.messages.insert({
-        id: ids.uuid(),
-        created_at: nowIso(),
-        thread_id: ids.uuid(),
-        user_id: recipient.id,
-        from_side: 'bank',
-        author_name: `${req.bankUser.first_name} ${req.bankUser.last_name}`.trim() || 'Rockfield Client Services',
-        subject,
-        body,
-        read_at: null,
-        attachments: null,
-      });
-    }
+    // One bulk write. "Everyone" is every customer the bank has, and a row
+    // each would be a round trip each - the sort of thing that is instant
+    // against a handful of demonstration accounts and times out against a
+    // real book.
+    const author = `${req.bankUser.first_name} ${req.bankUser.last_name}`.trim() || 'Rockfield Client Services';
+    await db.messages.insertMany(recipients.map((recipient) => ({
+      id: ids.uuid(),
+      created_at: nowIso(),
+      thread_id: ids.uuid(),
+      user_id: recipient.id,
+      from_side: 'bank',
+      author_name: author,
+      subject,
+      body,
+      read_at: null,
+      attachments: null,
+    })));
   }
 
   await audit.log({
@@ -992,12 +991,13 @@ const replyToMessage = asyncHandler(async (req, res) => {
 
 const listDisputes = asyncHandler(async (req, res) => {
   const rows = await db.disputes.find({}, { order: 'created_at.desc' });
-  const out = [];
-  for (const row of rows) {
-    const owner = await db.users.findById(row.user_id);
-    out.push({ ...money_.publicDispute(row), customer: owner ? usersLib.publicUser(owner, 'summary') : null });
-  }
-  res.json({ disputes: out });
+  const owners = await db.users.findByIds(rows.map((r) => r.user_id));
+  res.json({
+    disputes: rows.map((row) => ({
+      ...money_.publicDispute(row),
+      customer: owners.has(row.user_id) ? usersLib.publicUser(owners.get(row.user_id), 'summary') : null,
+    })),
+  });
 });
 
 const resolveDispute = asyncHandler(async (req, res) => {

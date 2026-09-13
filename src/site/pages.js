@@ -603,7 +603,8 @@ const legalContent = `
 /* ======================================================================= 404 == */
 
 const notFoundContent = `
-  <section class="rf-hero" style="min-height:60vh;display:flex;align-items:center">
+  <section class="rf-hero has-mark" style="min-height:60vh;display:flex;align-items:center">
+    <img class="rf-hero-mark" src="/assets/bank/logomark-light.png" alt="" aria-hidden="true" width="940" height="499" />
     <div class="wrap">
       <span class="rf-eyebrow">Error 404</span>
       <h1>Not on the books.</h1>

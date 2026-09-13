@@ -114,8 +114,13 @@ const sendMessage = asyncHandler(async (req, res) => {
 const readThread = asyncHandler(async (req, res) => {
   const rows = await db.messages.find({ user_id: req.bankUser.id, thread_id: req.params.id });
   if (!rows.length) throw fail(404, 'Conversation not found.');
-  for (const row of rows) {
-    if (row.from_side === 'bank' && !row.read_at) await db.messages.update(row.id, { read_at: nowIso() });
+  // One write for the thread rather than one per unread message.
+  const unread = rows.filter((row) => row.from_side === 'bank' && !row.read_at);
+  if (unread.length) {
+    await db.messages.updateWhere(
+      { user_id: req.bankUser.id, thread_id: req.params.id, from_side: 'bank', read_at: null },
+      { read_at: nowIso() }
+    );
   }
   res.json({ status: 'ok', messages: rows.length });
 });
