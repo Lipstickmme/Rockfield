@@ -464,10 +464,19 @@ If that does not do it, `/api/health` says what the server can actually see:
 
 - `adminEmailFromEnv: false` - the variable is not in the **Production**
   environment, or there has been no redeploy since it was added.
-- `"users": 0, "seed": { "attempted": false }` - nothing has asked the bank for
-  data yet, so it has not created itself. **Open `/signin` and try to sign in**:
-  that is what seeds it. Then check `/api/health` again. Note that `/api/health`
-  deliberately does not seed - it is a read, not an action.
+- `"users": 0` - the bank has not created itself yet. **Open
+  `/api/health?seed=1`**: that builds it there and then and tells you what
+  happened, rather than leaving the reason in a function log. It only acts on a
+  bank with no accounts, so it is safe to leave reachable and a no-op
+  afterwards. Plain `/api/health` never seeds - it is a read.
+- `"tables": false` - Supabase is connected but `0003_bank.sql` has not been
+  run. The storage layer falls back to local files when a table is missing, so
+  the bank will appear to work and then forget everything the moment the
+  container is recycled. Run the migration.
+- `"seed": { "attempted": false }` on its own means nothing - it describes only
+  the server process that answered you, and on a serverless host the next
+  request lands somewhere else. `users` is the field that speaks for the whole
+  deployment.
 - `"seed": { "ok": false, "error": ... }` - the bank tried and failed, and the
   error names the table. Run `/api/health?probe=1`, which now covers all
   sixteen of the bank's tables, and re-run the migration it points at.

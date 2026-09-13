@@ -191,6 +191,71 @@ async function withApp(env, fn) {
       }
     );
     receiving.close();
+
+    // The bank builds itself on the first request that needs data. When that
+    // never happens - or happens and fails - the only symptom is a sign-in
+    // page rejecting every password, and the reason is in a log on a host
+    // somebody has to go and find. ?seed=1 does it here and says what
+    // happened.
+    const banking = await mock.start({});
+    await withApp(
+      {
+        SUPABASE_URL: `http://127.0.0.1:${banking.address().port}`,
+        SUPABASE_SERVICE_ROLE_KEY: mock.SERVICE_KEY,
+        SUPABASE_ANON_KEY: mock.ANON_KEY,
+        BANK_ADMIN_EMAIL: 'ops@rockfield.test',
+        BANK_ADMIN_PASSWORD: 'Quarry#Road2026',
+      },
+      async (base) => {
+        const before = await req(base, 'GET', '/api/health');
+        assert.strictEqual(before.body.bank.users, 0, 'nothing is seeded until something asks');
+
+        const seeded = await req(base, 'GET', '/api/health?seed=1');
+        assert.strictEqual(seeded.body.bank.seedRun.ran, true);
+        assert.strictEqual(seeded.body.bank.seedRun.ok, true, JSON.stringify(seeded.body.bank.seedRun));
+        assert.ok(seeded.body.bank.seedRun.users > 0, 'accounts exist afterwards');
+
+        // The credentials from the environment are the ones that work.
+        const login = await req(base, 'POST', '/api/bank/auth/login', {
+          email: 'ops@rockfield.test', password: 'Quarry#Road2026',
+        });
+        assert.strictEqual(login.status, 200, JSON.stringify(login.body));
+        assert.strictEqual(login.body.user.role, 'admin');
+
+        // And it is a no-op once the bank exists, so it is safe to leave up.
+        const again = await req(base, 'GET', '/api/health?seed=1');
+        assert.strictEqual(again.body.bank.seedRun.ran, false);
+        console.log('  ok  ?seed=1 builds the bank, the env credentials sign in, a second call is a no-op');
+      }
+    );
+    banking.close();
+
+    // And when the bank's tables are missing it says so rather than failing
+    // silently, which is the whole point of the endpoint.
+    const noTables = await mock.start({});
+    Object.keys(noTables.db).filter((t) => t.startsWith('bank_')).forEach((t) => { delete noTables.db[t]; });
+    await withApp(
+      {
+        SUPABASE_URL: `http://127.0.0.1:${noTables.address().port}`,
+        SUPABASE_SERVICE_ROLE_KEY: mock.SERVICE_KEY,
+        SUPABASE_ANON_KEY: mock.ANON_KEY,
+      },
+      async (base) => {
+        const res = await req(base, 'GET', '/api/health?seed=1');
+        assert.strictEqual(res.body.bank.tables, false, 'the missing tables are reported');
+        assert.strictEqual(res.body.bank.seedRun.ran, false);
+        assert.match(res.body.bank.seedRun.reason, /0003_bank\.sql/);
+        // The storage layer falls back to local files when a table is absent,
+        // so without this warning the bank looks healthy and then forgets
+        // everything the moment the container is recycled.
+        assert.ok(
+          res.body.warnings.some((w) => /bank's tables are missing[\s\S]*discards/.test(w)),
+          JSON.stringify(res.body.warnings)
+        );
+        console.log('  ok  a bank with no tables is caught, not quietly run off the filesystem');
+      }
+    );
+    noTables.close();
   }
 
   /* ---- 5. contact enquiries still land ---- */

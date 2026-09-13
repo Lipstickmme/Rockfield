@@ -121,6 +121,29 @@ async function countUsers() {
   }
 }
 
+/**
+ * Whether the bank's tables are actually there.
+ *
+ * Asked directly rather than inferred from a count, because the storage layer
+ * deliberately falls back to the filesystem when a table is missing - so a
+ * bank with no tables at all reports zero accounts rather than an error, and
+ * then quietly writes to a container that a serverless host throws away. The
+ * bank appears to work, and forgets everything between visits.
+ *
+ * Returns null when Supabase is not configured at all, which is a different
+ * thing and not a fault: running on files is the documented local default.
+ */
+async function bankTablesReadable() {
+  const supabase = getSupabase();
+  if (!supabase) return null;
+  try {
+    await supabase.select('bank_users', 'select=id&limit=1');
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+
 exports.health = async (req, res) => {
   const url = config.supabaseUrl();
   const anon = config.supabaseAnonKey();
@@ -180,6 +203,52 @@ exports.health = async (req, res) => {
     );
   }
 
+  // Opt-in: create the bank, and say what happened.
+  //
+  // The bank builds itself on the first request that needs data, which is
+  // normally the sign-in page. That is fine until it is not: if it never runs,
+  // or runs and fails, the only symptom is a sign-in page that rejects every
+  // password - truthfully, because there are no accounts behind it - and the
+  // reason is in a function log on a host somebody has to go and find.
+  //
+  // `?seed=1` does it here instead, and returns the error rather than logging
+  // it. Safe to leave reachable: it only acts on a bank with no accounts at
+  // all, so it can do nothing that loading /signin would not already do, and
+  // once there is a single customer it is a read like the rest of this
+  // endpoint.
+  const bankTables = await bankTablesReadable();
+  if (bankTables === false) {
+    warnings.push(
+      'Supabase is connected but the bank\'s tables are missing, so the bank is writing to the container filesystem - which a serverless host discards between requests. It will appear to work and forget everything. Run supabase/migrations/0003_bank.sql.'
+    );
+  }
+
+  let seedRun;
+  if (req.query.seed) {
+    const before = await countUsers();
+    if (bankTables === false) {
+      seedRun = { ran: false, reason: 'the bank tables are missing; run supabase/migrations/0003_bank.sql' };
+    } else if (before === null) {
+      seedRun = { ran: false, reason: 'the bank tables are not readable; run supabase/migrations/0003_bank.sql' };
+    } else if (before > 0) {
+      seedRun = { ran: false, reason: `the bank already has ${before} account(s)`, users: before };
+    } else {
+      const startedAt = Date.now();
+      try {
+        const result = await require('../bank/seed').ensureSeed();
+        const admin = await require('../bank/seed').reconcileAdmin();
+        seedRun = {
+          ran: true, ok: true, tookMs: Date.now() - startedAt,
+          users: await countUsers(), admin: admin.reason || null,
+          note: 'Sign in with BANK_ADMIN_EMAIL and BANK_ADMIN_PASSWORD.',
+        };
+      } catch (err) {
+        seedRun = { ran: true, ok: false, tookMs: Date.now() - startedAt, error: err.message };
+        warnings.push(`Seeding the bank failed: ${err.message}`);
+      }
+    }
+  }
+
   // Opt-in: the plain health check stays a pure environment read.
   let schema;
   if (req.query.probe) {
@@ -217,10 +286,16 @@ exports.health = async (req, res) => {
       adminPasswordResetRequested: /^(1|true|yes|on)$/i.test(String(process.env.BANK_ADMIN_RESET || '')),
       encryptionKeySet: Boolean(process.env.BANK_ENCRYPTION_KEY),
       users: await countUsers(),
-      // What happened the last time this process tried to seed. `attempted:
-      // false` with no accounts means nothing has asked the bank for data yet
-      // - the first visit to the sign-in page does it.
-      seed: require('../bank/seed').seedStatus(),
+      // false means Supabase is connected but 0003_bank.sql has not been run,
+      // and the bank has silently fallen back to ephemeral local files.
+      tables: bankTables === null ? 'not using supabase' : bankTables,
+      // What this particular server process has seen. On a serverless host
+      // each request may land on a different instance, so `attempted: false`
+      // means "not in the process answering you", not "never anywhere" -
+      // `users` is the one that speaks for the whole deployment. Add ?seed=1
+      // to create the bank here and now and see what happens.
+      seed: { ...require('../bank/seed').seedStatus(), thisProcessOnly: true },
+      seedRun,
     },
     schema: req.query.probe ? schema || 'supabase not configured' : undefined,
     warnings,
