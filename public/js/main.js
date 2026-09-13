@@ -1,8 +1,9 @@
 'use strict';
 
 /* =========================================================================
-   Merkel Constructions shared frontend.
-   Exposes helpers on window.MERKEL for per-page scripts, drives shared UI
+   Rockfield National Bank shared frontend for the public site.
+   Exposes helpers on window.ROCKFIELD (window.MERKEL remains as an alias for
+   the page scripts that came with the template), drives shared UI
    (nav, hero slideshow, reveals, counters, contact form) and hydrates the
    home page. Data comes from the Express API with seed-data fallbacks.
    ========================================================================= */
@@ -29,10 +30,10 @@
     { code: 'S-04', title: 'Digital Engineering', summary: 'BIM coordination, parametric design and digital twins that keep every discipline working from one source of truth.', capabilities: ['BIM / VDC', 'Parametric design', 'Digital twins', 'Clash & 4D scheduling'] }
   ];
   const FALLBACK_PROJECTS = [
-    { id: 'helix-tower', name: 'Helix Tower', sector: 'Commercial', location: 'Hamburg, DE', year: 2025, metric: '184 m', metricLabel: 'structural height', image: '/assets/img/merkel3.webp', blurb: 'A diagrid super-structure that cut steel tonnage by 22 percent against a conventional frame.' },
-    { id: 'north-crossing', name: 'North Crossing', sector: 'Infrastructure', location: 'Aarhus, DK', year: 2024, metric: '410 m', metricLabel: 'cable-stayed span', image: '/assets/img/merkel1.webp', blurb: 'A twin-pylon bridge engineered for extreme fjord wind loading and marine durability.' },
-    { id: 'atlas-plant', name: 'Atlas Process Plant', sector: 'Industrial', location: 'Duisburg, DE', year: 2024, metric: '38%', metricLabel: 'energy reduction', image: '/assets/img/merkel4.webp', blurb: 'A heat-recovery redesign of a continuous process line, recommissioned with zero downtime.' },
-    { id: 'meridian-transit', name: 'Meridian Transit Hub', sector: 'Transit', location: 'Lyon, FR', year: 2023, metric: '60k / day', metricLabel: 'passenger capacity', image: '/assets/img/merkel2.webp', blurb: 'A long-span steel canopy and below-grade concourse delivered on a live rail corridor.' }
+    { id: 'meridian-logistics', name: 'Meridian Logistics', sector: 'Business banking', location: 'Columbus, OH', year: 2025, metric: '2 days', metricLabel: 'cut from payroll settlement', image: '/assets/bank/story-logistics.svg', blurb: 'Same-day ACH origination took two days out of a payroll run for 640 drivers.' },
+    { id: 'harrow-street', name: 'Harrow Street Residences', sector: 'Commercial lending', location: 'Columbus, OH', year: 2024, metric: '$14.2m', metricLabel: 'construction facility', image: '/assets/bank/story-property.svg', blurb: 'A construction facility drawn against surveyed progress rather than a fixed calendar.' },
+    { id: 'field-and-vine', name: 'Field & Vine Grocers', sector: 'Merchant services', location: 'Dublin, OH', year: 2025, metric: 'Next day', metricLabel: 'card settlement', image: '/assets/bank/story-retail.svg', blurb: 'Next-business-day settlement across nine stores, reconciled against the operating account automatically.' },
+    { id: 'ellis-household', name: 'The Ellis household', sector: 'Personal banking', location: 'Columbus, OH', year: 2026, metric: '4.35%', metricLabel: 'APY on savings', image: '/assets/bank/story-personal.svg', blurb: 'Round-ups and an automatic sweep the day after payday, with nothing to remember.' }
   ];
 
   function projectCard(p) {
@@ -123,7 +124,10 @@
     }
   }
 
-  window.MERKEL = { $, $$, esc, fetchJSON, reduceMotion, projectCard, observeReveals, FALLBACK_PROJECTS, site };
+  // ROCKFIELD is the name to use. MERKEL is kept as an alias because the page
+  // scripts this site inherited from the template still reach for it.
+  window.ROCKFIELD = { $, $$, esc, fetchJSON, reduceMotion, projectCard, observeReveals, FALLBACK_PROJECTS, site };
+  window.MERKEL = window.ROCKFIELD;
 
   /* Nav, scroll progress, underlay parallax, chapter rail ----------------- */
   const nav = $('#nav');

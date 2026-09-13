@@ -19,6 +19,12 @@ const app = express();
 app.set('trust proxy', 1);
 app.disable('x-powered-by');
 
+// The banking application. Mounted ahead of the site body parser and the site
+// rate limiter: it needs a larger upload ceiling (a photographed check) and a
+// far higher request budget (a dashboard screen is a dozen calls) than a
+// marketing page does.
+app.use('/api/bank', require('./routes/bank'));
+
 // `verify` stashes the exact bytes so webhook signatures can be checked.
 app.use(express.json({ limit: '1mb', verify: (req, res, buf) => { req.rawBody = buf; } }));
 app.use(express.urlencoded({ extended: false, limit: '32kb' }));

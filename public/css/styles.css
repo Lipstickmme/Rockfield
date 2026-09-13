@@ -1639,7 +1639,7 @@ main { background: #102534 !important; }
 .footer { background: #081923; }
 
 /* Final Axis reference pass: full-bleed hero with readable dark grid. */
-.hero { display: block !important; min-height: 100svh !important; padding: 0 !important; background-color: #0c151c !important; background-image: url('/assets/img/merkel2.webp') !important; background-size: cover !important; background-position: 50% 50% !important; }
+.hero { display: block !important; min-height: 100svh !important; padding: 0 !important; background-color: #0c151c !important; background-image: url('/assets/bank/hero.svg') !important; background-size: cover !important; background-position: 50% 50% !important; }
 .hero-slides { position: absolute !important; inset: 0 !important; display: block !important; min-height: 100% !important; max-height: none !important; width: 100% !important; margin: 0 !important; overflow: hidden !important; }
 .hero-slides .slide { background-size: cover !important; background-position: 54% 50% !important; }
 .hero-inner { display: flex !important; align-items: flex-end !important; min-height: 100svh !important; padding: 148px 40px 132px !important; max-width: 1320px !important; margin: 0 auto !important; background: transparent !important; }
@@ -1683,7 +1683,7 @@ main { background: #102534 !important; }
 }
 
 /* Last mobile override keeps the hero full-bleed like the Axis reference. */
-.hero { background-color: #0c151c !important; background-image: url('/assets/img/merkel2.webp') !important; background-size: cover !important; background-position: 50% 50% !important; }
+.hero { background-color: #0c151c !important; background-image: url('/assets/bank/hero.svg') !important; background-size: cover !important; background-position: 50% 50% !important; }
 @media (max-width: 720px) {
   .hero { display: block !important; padding-top: 0 !important; background-position: 52% 50% !important; }
   .hero-slides { position: absolute !important; inset: 0 !important; width: 100% !important; min-height: 100% !important; max-height: none !important; margin: 0 !important; }

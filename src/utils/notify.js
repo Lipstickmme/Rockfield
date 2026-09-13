@@ -26,7 +26,7 @@ function defaultTo() {
 
 /** Verified sender identity. */
 function defaultFrom() {
-  return process.env.FORM_FROM || process.env.NOTIFY_FROM || 'Merkel Website <onboarding@resend.dev>';
+  return process.env.FORM_FROM || process.env.NOTIFY_FROM || 'Rockfield National Bank <onboarding@resend.dev>';
 }
 
 /**
@@ -56,7 +56,11 @@ async function send(opts) {
   // out serving. A message written by a person should not arrive looking like a
   // log line, and a text-only mail also scores better with spam filters, so
   // `html: false` sends without an HTML part at all.
-  if (opts.html !== false) {
+  // A caller that has written its own HTML part (the bank's alert templates do)
+  // passes it through as a string; `false` sends text only.
+  if (typeof opts.html === 'string' && opts.html.trim()) {
+    payload.html = opts.html;
+  } else if (opts.html !== false) {
     payload.html = `<pre style="font:14px/1.6 ui-monospace,monospace;white-space:pre-wrap">${escapeHtml(opts.text)}</pre>`;
   }
   if (opts.replyTo) payload.reply_to = opts.replyTo;
@@ -70,14 +74,14 @@ async function send(opts) {
     });
     const text = await res.text().catch(() => '');
     if (!res.ok) {
-      console.warn('[merkel] notify email failed:', res.status, text);
+      console.warn('[rockfield] notify email failed:', res.status, text);
       return { ok: false, error: `resend_${res.status}` };
     }
     let id;
     try { id = JSON.parse(text).id; } catch (e) { /* id is a bonus, not a requirement */ }
     return { ok: true, id };
   } catch (err) {
-    console.warn('[merkel] notify email error:', err.message);
+    console.warn('[rockfield] notify email error:', err.message);
     return { ok: false, error: err.message };
   }
 }
@@ -97,10 +101,10 @@ async function sendWebhook(subject, text, data) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: `${subject}\n\n${text}`, content: `${subject}\n\n${text}`, subject, data }),
     });
-    if (!res.ok) console.warn('[merkel] notify webhook failed:', res.status);
+    if (!res.ok) console.warn('[rockfield] notify webhook failed:', res.status);
     return res.ok;
   } catch (err) {
-    console.warn('[merkel] notify webhook error:', err.message);
+    console.warn('[rockfield] notify webhook error:', err.message);
     return false;
   }
 }

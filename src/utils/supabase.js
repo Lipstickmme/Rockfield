@@ -80,6 +80,31 @@ function getSupabase() {
       return res.json();
     },
 
+    /** Patch rows matching a PostgREST filter, returning what changed. */
+    async update(table, filter, patch) {
+      const res = await fetch(`${base}/${table}?${filter}`, {
+        method: 'PATCH',
+        headers: { ...headers, Prefer: 'return=representation' },
+        body: JSON.stringify(patch),
+      });
+      if (!res.ok) {
+        throw new Error(`supabase update ${table} failed: ${res.status} ${await res.text().catch(() => '')}`);
+      }
+      return res.json();
+    },
+
+    /** Delete rows matching a PostgREST filter. */
+    async remove(table, filter) {
+      const res = await fetch(`${base}/${table}?${filter}`, {
+        method: 'DELETE',
+        headers: { ...headers, Prefer: 'return=minimal' },
+      });
+      if (!res.ok) {
+        throw new Error(`supabase delete ${table} failed: ${res.status} ${await res.text().catch(() => '')}`);
+      }
+      return true;
+    },
+
     async select(table, query = '') {
       const res = await fetch(`${base}/${table}${query ? `?${query}` : ''}`, { headers });
       if (!res.ok) {
@@ -89,7 +114,7 @@ function getSupabase() {
     },
   };
 
-  console.log('[merkel] storage: Supabase');
+  console.log('[rockfield] storage: Supabase');
   return client;
 }
 

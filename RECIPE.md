@@ -5,6 +5,11 @@ security model and the email plumbing transfer unchanged; the front end here is
 static HTML and vanilla JS rather than TanStack Start, so the client-side parts
 are written differently while making the same decisions.
 
+The banking application at `src/bank/` was built on top of that base and is
+described at the end of this file. It keeps its own session system rather than
+using Supabase auth, because a customer signing into a bank is not the same
+actor as a member of staff signing into the desk.
+
 ## File structure
 
 ```
@@ -126,3 +131,77 @@ bundler, use the real client and take realtime with it.
   dies on a file that is present locally. Anchor with a leading slash: `/data/`.
   `npm run check:vercel` simulates the upload and fails if anything the build
   requires would be excluded. This one bit us for real.
+
+
+---
+
+## The banking layer
+
+Added on top of the stack above. The website side (enquiries, chat, mail, the
+desk at `/admin`) is untouched and still uses Supabase auth; the bank has its
+own everything.
+
+```
+src/bank/
+  constants.js     the institution, products, limits, fees, alert types
+  db.js            collections over Supabase or JSON files, with update/delete
+  ids.js           account numbers, cards, ABA and Luhn checks, ACH trace, IMAD
+  security.js      scrypt for secrets, AES-256-GCM for SSNs and card numbers
+  auth.js          server-side sessions, CSRF, one-time codes, lockout
+  ledger.js        post / settle / reverse, per-account locking
+  transfers.js     submit -> verify -> review -> complete | reject
+  users.js         creating a customer, and what may leave the server
+  accounts.js      opening accounts, issuing cards
+  alerts.js        notification rows first, branded email second
+  audit.js         the activity log every action writes to
+  settings.js      operator overrides on top of the defaults
+  seed.js          first-run data with six months of history
+```
+
+### The six decisions that matter here
+
+1. **Money is integer cents, everywhere.** No float touches a balance. The one
+   place dollars exist is `toCents()` at the edge of a request.
+
+2. **Balances change only in `ledger.js`, inside a per-account lock.** Every
+   change writes a transaction row, including a staff adjustment. There is no
+   code path that sets a balance directly, which is why every number on every
+   screen can be traced to an entry.
+
+3. **Pending is not posted.** A pending debit moves `hold_amount`, not
+   `balance`, and `availableFor()` is what the customer is allowed to spend.
+   Settling converts the hold into a posting in one locked step. This is what
+   stops held funds being spent twice while a transfer clears.
+
+4. **Sessions are rows, not JWTs.** The browser holds an opaque token in an
+   httpOnly cookie; the database holds its SHA-256 digest. That makes "sign out
+   this device" and "sign out everywhere" real operations, and makes a stolen
+   dump useless for session replay. A second, readable cookie carries the CSRF
+   token every state-changing request must echo.
+
+5. **Reversible secrets are encrypted, not hashed.** A bank has to show the
+   last four of an SSN on a form and the whole thing to a compliance officer,
+   so SSNs, ID numbers and card numbers use AES-256-GCM under
+   `BANK_ENCRYPTION_KEY`. Passwords and PINs, which never need reading back,
+   are scrypt.
+
+6. **Alerts are recorded before they are sent.** `alerts.notifyUser()` writes
+   the row, then attempts Resend and records what happened. The customer sees
+   the notification whether or not mail is configured, and the console can show
+   which ones failed to leave.
+
+### Traps worth pre-empting
+
+- **Daily limits must count the value date, not `created_at`.** Seeded and
+  backdated entries are written today but happened months ago; counting those
+  spends a customer's limit before they have used it.
+- **A hold applies on the direction, not the sign.** On a deposit account a
+  pending debit reduces available funds; on a credit card it reduces available
+  credit. Keying the hold off `direction === 'debit'` covers both; keying it
+  off the signed delta silently skips the card.
+- **`a { color: inherit }` beats `.rf-btn { color: #fff }`.** A blanket anchor
+  rule with a descendant selector outranks a single class, so an anchor styled
+  as a button loses its label colour. The override is in `bank.css`.
+- **One `[data-x]` attribute, one meaning.** A hint element and a set of
+  `<option>` rows both answering to `[data-available]` meant `querySelector`
+  found the option and overwrote it.

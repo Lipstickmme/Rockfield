@@ -1,0 +1,323 @@
+'use strict';
+
+/**
+ * The bank's persistence layer.
+ *
+ * Two backends, one interface. Supabase (PostgREST) when it is configured,
+ * otherwise JSON files under the data directory so the whole application runs
+ * on a laptop with nothing provisioned. A ledger needs more than the
+ * append-only store the marketing site uses - balances change, transfers move
+ * through states, cards get frozen - so this module adds update, delete and
+ * filtered reads, and serialises writes per collection.
+ *
+ * Money is always stored in integer cents. Dates are always ISO-8601 strings.
+ */
+
+const fs = require('fs/promises');
+const path = require('path');
+
+const { dataDir } = require('../utils/paths');
+const { getSupabase } = require('../utils/supabase');
+
+/** Every collection, with the Supabase table it maps to. */
+const COLLECTIONS = {
+  users: 'bank_users',
+  accounts: 'bank_accounts',
+  transactions: 'bank_transactions',
+  transfers: 'bank_transfers',
+  beneficiaries: 'bank_beneficiaries',
+  cards: 'bank_cards',
+  payees: 'bank_payees',
+  bills: 'bank_bills',
+  deposits: 'bank_deposits',
+  documents: 'bank_documents',
+  statements: 'bank_statements',
+  activity: 'bank_activity',
+  alerts: 'bank_alerts',
+  messages: 'bank_messages',
+  disputes: 'bank_disputes',
+  sessions: 'bank_sessions',
+  otps: 'bank_otps',
+  settings: 'bank_settings',
+  notices: 'bank_notices',
+};
+
+const bankDir = () => path.join(dataDir(), 'bank');
+
+/* ----------------------------------------------------------- filtering --- */
+
+/**
+ * A where clause is `{ field: value }` for equality, or
+ * `{ field: { op: value } }` where op is one of eq, neq, gt, gte, lt, lte,
+ * in, like, isNull. Kept deliberately small: everything the bank asks for
+ * fits, and anything larger belongs in a view.
+ */
+function matches(row, where) {
+  if (!where) return true;
+  return Object.entries(where).every(([field, cond]) => {
+    const value = row[field];
+    if (cond === null) return value === null || value === undefined;
+    if (typeof cond !== 'object' || Array.isArray(cond)) {
+      if (Array.isArray(cond)) return cond.includes(value);
+      return value === cond;
+    }
+    return Object.entries(cond).every(([op, operand]) => {
+      switch (op) {
+        case 'eq': return value === operand;
+        case 'neq': return value !== operand;
+        case 'gt': return value > operand;
+        case 'gte': return value >= operand;
+        case 'lt': return value < operand;
+        case 'lte': return value <= operand;
+        case 'in': return Array.isArray(operand) && operand.includes(value);
+        case 'nin': return Array.isArray(operand) && !operand.includes(value);
+        case 'like': return String(value || '').toLowerCase().includes(String(operand).toLowerCase());
+        case 'isNull': return operand ? value == null : value != null;
+        default: return true;
+      }
+    });
+  });
+}
+
+/** Translate the same clause into PostgREST query parameters. */
+function toQuery(where = {}, opts = {}) {
+  const parts = [];
+  Object.entries(where).forEach(([field, cond]) => {
+    const enc = (v) => encodeURIComponent(v);
+    if (cond === null) {
+      parts.push(`${field}=is.null`);
+      return;
+    }
+    if (Array.isArray(cond)) {
+      parts.push(`${field}=in.(${cond.map(enc).join(',')})`);
+      return;
+    }
+    if (typeof cond !== 'object') {
+      parts.push(`${field}=eq.${enc(cond)}`);
+      return;
+    }
+    Object.entries(cond).forEach(([op, operand]) => {
+      switch (op) {
+        case 'in': parts.push(`${field}=in.(${(operand || []).map(enc).join(',')})`); break;
+        case 'nin': parts.push(`${field}=not.in.(${(operand || []).map(enc).join(',')})`); break;
+        case 'like': parts.push(`${field}=ilike.*${enc(operand)}*`); break;
+        case 'isNull': parts.push(`${field}=${operand ? 'is.null' : 'not.is.null'}`); break;
+        default: parts.push(`${field}=${op}.${enc(operand)}`);
+      }
+    });
+  });
+  if (opts.order) parts.push(`order=${opts.order}`);
+  if (opts.limit) parts.push(`limit=${opts.limit}`);
+  if (opts.offset) parts.push(`offset=${opts.offset}`);
+  parts.push('select=*');
+  return parts.join('&');
+}
+
+function sortRows(rows, order) {
+  if (!order) return rows;
+  const [field, dir = 'asc'] = String(order).split('.');
+  const sign = dir.startsWith('desc') ? -1 : 1;
+  return rows.slice().sort((a, b) => {
+    const av = a[field];
+    const bv = b[field];
+    if (av === bv) return 0;
+    if (av == null) return 1;
+    if (bv == null) return -1;
+    return (av > bv ? 1 : -1) * sign;
+  });
+}
+
+/* --------------------------------------------------------- file backend --- */
+
+const cache = new Map(); // collection -> rows
+const chains = new Map(); // collection -> Promise, so writes never interleave
+
+function chain(name, task) {
+  const prev = chains.get(name) || Promise.resolve();
+  const next = prev.then(task, task);
+  chains.set(name, next.catch(() => {}));
+  return next;
+}
+
+async function readFile(name) {
+  if (cache.has(name)) return cache.get(name);
+  const file = path.join(bankDir(), `${name}.json`);
+  let rows = [];
+  try {
+    const raw = await fs.readFile(file, 'utf8');
+    const parsed = JSON.parse(raw);
+    rows = Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    if (err.code !== 'ENOENT') throw err;
+  }
+  cache.set(name, rows);
+  return rows;
+}
+
+async function writeFile(name, rows) {
+  cache.set(name, rows);
+  await fs.mkdir(bankDir(), { recursive: true });
+  const file = path.join(bankDir(), `${name}.json`);
+  await fs.writeFile(file, JSON.stringify(rows, null, 2), 'utf8');
+}
+
+/* --------------------------------------------------------- collections --- */
+
+function createCollection(name) {
+  const table = COLLECTIONS[name] || `bank_${name}`;
+
+  async function find(where = {}, opts = {}) {
+    const supabase = getSupabase();
+    if (supabase) {
+      try {
+        return await supabase.select(table, toQuery(where, opts));
+      } catch (err) {
+        // A missing table means the migration has not been applied yet. Fall
+        // through to files rather than taking the whole dashboard down.
+        if (/does not exist|42P01|PGRST205/i.test(err.message)) {
+          console.warn(`[rockfield] ${table} missing in Supabase; using file storage`);
+        } else {
+          throw err;
+        }
+      }
+    }
+    const rows = await readFile(name);
+    let out = rows.filter((r) => matches(r, where));
+    out = sortRows(out, opts.order);
+    if (opts.offset) out = out.slice(opts.offset);
+    if (opts.limit) out = out.slice(0, opts.limit);
+    return out.map((r) => ({ ...r }));
+  }
+
+  async function findOne(where = {}, opts = {}) {
+    const rows = await find(where, { ...opts, limit: 1 });
+    return rows[0] || null;
+  }
+
+  const findById = (id) => (id ? findOne({ id }) : Promise.resolve(null));
+
+  async function insert(record) {
+    const row = { ...record };
+    const supabase = getSupabase();
+    if (supabase) {
+      try {
+        await supabase.insert(table, row);
+        return row;
+      } catch (err) {
+        if (!/does not exist|42P01|PGRST205/i.test(err.message)) throw err;
+      }
+    }
+    return chain(name, async () => {
+      const rows = await readFile(name);
+      rows.push(row);
+      await writeFile(name, rows);
+      return row;
+    });
+  }
+
+  async function insertMany(records) {
+    const out = [];
+    for (const r of records) out.push(await insert(r));
+    return out;
+  }
+
+  async function update(id, patch) {
+    const supabase = getSupabase();
+    if (supabase) {
+      try {
+        const rows = await supabase.update(table, `id=eq.${encodeURIComponent(id)}`, patch);
+        return (rows && rows[0]) || null;
+      } catch (err) {
+        if (!/does not exist|42P01|PGRST205/i.test(err.message)) throw err;
+      }
+    }
+    return chain(name, async () => {
+      const rows = await readFile(name);
+      const idx = rows.findIndex((r) => r.id === id);
+      if (idx === -1) return null;
+      rows[idx] = { ...rows[idx], ...patch };
+      await writeFile(name, rows);
+      return { ...rows[idx] };
+    });
+  }
+
+  /** Patch every row matching a clause. Returns how many changed. */
+  async function updateWhere(where, patch) {
+    const rows = await find(where);
+    for (const row of rows) await update(row.id, patch);
+    return rows.length;
+  }
+
+  async function remove(id) {
+    const supabase = getSupabase();
+    if (supabase) {
+      try {
+        await supabase.remove(table, `id=eq.${encodeURIComponent(id)}`);
+        return true;
+      } catch (err) {
+        if (!/does not exist|42P01|PGRST205/i.test(err.message)) throw err;
+      }
+    }
+    return chain(name, async () => {
+      const rows = await readFile(name);
+      const next = rows.filter((r) => r.id !== id);
+      await writeFile(name, next);
+      return next.length !== rows.length;
+    });
+  }
+
+  async function removeWhere(where) {
+    const rows = await find(where);
+    for (const row of rows) await remove(row.id);
+    return rows.length;
+  }
+
+  async function count(where = {}) {
+    const rows = await find(where);
+    return rows.length;
+  }
+
+  return {
+    name,
+    table,
+    find,
+    findOne,
+    findById,
+    insert,
+    insertMany,
+    update,
+    updateWhere,
+    remove,
+    removeWhere,
+    count,
+  };
+}
+
+const db = {};
+Object.keys(COLLECTIONS).forEach((name) => {
+  db[name] = createCollection(name);
+});
+
+/**
+ * Serialised critical sections, keyed by whatever the caller is protecting
+ * (usually an account id). Posting to the ledger reads a balance and writes it
+ * back; two requests interleaving there would lose money.
+ */
+const locks = new Map();
+function withLock(key, task) {
+  const prev = locks.get(key) || Promise.resolve();
+  const next = prev.then(task, task);
+  locks.set(key, next.catch(() => {}));
+  next.finally(() => {
+    if (locks.get(key) === next) locks.delete(key);
+  }).catch(() => {});
+  return next;
+}
+
+/** Tests and the seeder need a clean slate without touching the filesystem. */
+function _resetCache() {
+  cache.clear();
+  chains.clear();
+}
+
+module.exports = { db, COLLECTIONS, withLock, matches, toQuery, bankDir, _resetCache };

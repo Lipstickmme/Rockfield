@@ -1,42 +1,58 @@
 [
   {
-    "id": "senior-structural",
-    "title": "Senior Structural Engineer",
-    "team": "Structural",
-    "location": "Studio",
+    "id": "personal-banker",
+    "title": "Personal Banker",
+    "team": "Retail",
+    "location": "Columbus, OH",
     "type": "Full time",
-    "summary": "Lead the structural design of tall buildings and long-span structures from concept through to site."
+    "summary": "Open accounts, sit with people through the hard conversations about money, and know when to escalate rather than improvise."
   },
   {
-    "id": "bridge-engineer",
-    "title": "Bridge Engineer",
-    "team": "Civil & Infrastructure",
-    "location": "Site based",
+    "id": "payments-operations-analyst",
+    "title": "Payments Operations Analyst",
+    "team": "Payments",
+    "location": "Columbus, OH",
     "type": "Full time",
-    "summary": "Design bridges and marine structures for demanding wind and durability requirements."
+    "summary": "Review and release outgoing wires and ACH files, and hold the ones that should not go."
   },
   {
-    "id": "bim-coordinator",
-    "title": "BIM Coordinator",
-    "team": "Digital Engineering",
-    "location": "Studio",
+    "id": "fraud-investigator",
+    "title": "Fraud Investigator",
+    "team": "Financial Crime",
+    "location": "Hybrid",
     "type": "Full time",
-    "summary": "Keep multi-discipline models coordinated and drive our digital-twin workflows."
+    "summary": "Work claims end to end: the customer call, the evidence, the provisional credit and the decision."
   },
   {
-    "id": "mechanical-graduate",
-    "title": "Graduate Mechanical Engineer",
-    "team": "Mechanical Systems",
-    "location": "Studio",
-    "type": "Graduate",
-    "summary": "Join our systems team on energy, HVAC and process work with senior mentorship."
+    "id": "bsa-aml-officer",
+    "title": "BSA / AML Officer",
+    "team": "Compliance",
+    "location": "Columbus, OH",
+    "type": "Full time",
+    "summary": "Own the sanctions and monitoring programme, and be the person who can say no to the business."
   },
   {
-    "id": "project-engineer",
-    "title": "Project Engineer",
-    "team": "Civil & Infrastructure",
-    "location": "Site based",
+    "id": "core-platform-engineer",
+    "title": "Core Platform Engineer",
+    "team": "Technology",
+    "location": "Remote (US)",
     "type": "Full time",
-    "summary": "Coordinate delivery on major infrastructure commissions across sectors and borders."
+    "summary": "Build the ledger, the alerting and the interfaces the rest of the bank runs on. Correctness first, always."
+  },
+  {
+    "id": "commercial-relationship-manager",
+    "title": "Commercial Relationship Manager",
+    "team": "Business Banking",
+    "location": "Columbus, OH",
+    "type": "Full time",
+    "summary": "Carry a book of operating businesses and know their cash cycle better than their bookkeeper does."
+  },
+  {
+    "id": "credit-underwriter",
+    "title": "Credit Underwriter",
+    "team": "Lending",
+    "location": "Hybrid",
+    "type": "Full time",
+    "summary": "Underwrite consumer and small business credit, and write decisions a customer can actually read."
   }
 ]

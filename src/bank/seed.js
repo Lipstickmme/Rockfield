@@ -1,0 +1,553 @@
+'use strict';
+
+/**
+ * First-run data.
+ *
+ * A banking dashboard with no history is impossible to judge, so a fresh
+ * install comes up with an administrator, two customers and roughly six months
+ * of plausible activity: payroll on the 15th and the last working day, rent on
+ * the 1st, a card that gets used at the same handful of places, a savings
+ * sweep, a credit card that gets paid off most months.
+ *
+ * Everything is generated through the same ledger the live application uses,
+ * so the seeded balances are the sum of the seeded entries rather than numbers
+ * written on top of them. Idempotent: it does nothing if users already exist.
+ */
+
+const { db } = require('./db');
+const ids = require('./ids');
+const ledger = require('./ledger');
+const users = require('./users');
+const accountsLib = require('./accounts');
+const security = require('./security');
+const { BANK, DEFAULT_SETTINGS } = require('./constants');
+
+const nowIso = () => new Date().toISOString();
+
+/* A small deterministic PRNG, so two installs of the same build look alike. */
+function rng(seed = 20260912) {
+  let s = seed >>> 0;
+  return function next() {
+    s = (s * 1664525 + 1013904223) >>> 0;
+    return s / 4294967296;
+  };
+}
+
+const MERCHANTS = {
+  Groceries: ['Harrow Market', 'Northside Grocers', 'Field & Vine', 'Belmont Foods'],
+  Dining: ['Cafe Torrent', 'The Quarry Room', 'Ninth Street Diner', 'Mori Ramen', 'Basalt Coffee'],
+  Transport: ['Metro Transit', 'Ridehail Inc', 'City Parking Authority'],
+  Fuel: ['Granite Fuel', 'Trailhead Gas'],
+  Travel: ['Continental Air', 'Harborview Hotel'],
+  Utilities: ['Columbus Power & Light', 'Clearwater Utilities', 'Fibernet Broadband'],
+  Shopping: ['Meridian Supply Co', 'Ashgate Hardware', 'Lantern Books'],
+  Entertainment: ['Palace Cinema', 'Rockfield Arena'],
+  Subscriptions: ['Streamline Media', 'Cloudline Storage', 'Ledger App Pro'],
+  Healthcare: ['Brookfield Dental', 'Riverside Pharmacy'],
+  Insurance: ['Sentinel Mutual'],
+  Education: ['Ohio State Bursar'],
+};
+
+const CATEGORY_WEIGHTS = [
+  ['Groceries', 0.22, 3200, 14500],
+  ['Dining', 0.2, 900, 7800],
+  ['Transport', 0.1, 250, 3400],
+  ['Fuel', 0.08, 3200, 8900],
+  ['Shopping', 0.12, 1500, 22000],
+  ['Entertainment', 0.07, 1200, 9500],
+  ['Subscriptions', 0.08, 599, 2499],
+  ['Healthcare', 0.05, 1500, 18000],
+  ['Utilities', 0.05, 4500, 19500],
+  ['Travel', 0.03, 12000, 68000],
+];
+
+function pick(list, r) {
+  return list[Math.floor(r() * list.length) % list.length];
+}
+
+function weightedCategory(r) {
+  const roll = r();
+  let acc = 0;
+  for (const row of CATEGORY_WEIGHTS) {
+    acc += row[1];
+    if (roll <= acc) return row;
+  }
+  return CATEGORY_WEIGHTS[0];
+}
+
+function amountBetween(r, min, max) {
+  return Math.round(min + r() * (max - min));
+}
+
+function isWeekend(date) {
+  const d = date.getUTCDay();
+  return d === 0 || d === 6;
+}
+
+/**
+ * True when this date is the working day a semi-monthly payroll actually lands
+ * on: the 15th and the last day of the month, pulled back to the Friday before
+ * when they fall on a weekend.
+ */
+function isPayday(date, lastDay) {
+  if (isWeekend(date)) return false;
+  const day = date.getUTCDate();
+  for (const nominal of [15, lastDay]) {
+    const target = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), nominal));
+    while (isWeekend(target)) target.setUTCDate(target.getUTCDate() - 1);
+    if (target.getUTCDate() === day) return true;
+  }
+  return false;
+}
+
+/**
+ * Build one customer's six months of history and post it in date order.
+ * Returns the entries posted, so the caller can log how much was created.
+ */
+async function generateHistory({ user, checking, savings, card, cardAccountId, monthlyIncome, seed }) {
+  const r = rng(seed);
+  const today = new Date();
+  const start = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - 5, 1));
+  const entries = [];
+
+  const cursor = new Date(start);
+  while (cursor <= today) {
+    const day = cursor.getUTCDate();
+    const iso = new Date(cursor).toISOString();
+
+    // Payroll: the 15th and the last day of the month, moved back to the
+    // preceding business day when either lands on a weekend - which is what a
+    // real payroll file does, and skipping those months instead would quietly
+    // halve the customer's income.
+    const lastDay = new Date(Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth() + 1, 0)).getUTCDate();
+    if (isPayday(cursor, lastDay)) {
+      entries.push({
+        accountId: checking.id,
+        direction: 'credit',
+        amount: Math.round(monthlyIncome / 2) + amountBetween(r, -4000, 6000),
+        description: 'MERIDIAN LOGISTICS PAYROLL DIRECT DEP',
+        merchant: 'Meridian Logistics',
+        category: 'Income',
+        method: 'direct_deposit',
+        date: iso,
+        counterparty: { name: 'Meridian Logistics Inc', bank: 'First Coast Bank', account_masked: '••••4417', type: 'ach' },
+        traceNumber: ids.achTrace(BANK.routingNumber),
+      });
+    }
+
+    // Rent on the 1st.
+    if (day === 1) {
+      entries.push({
+        accountId: checking.id,
+        direction: 'debit',
+        amount: 178500,
+        description: 'HARROW STREET RESIDENCES RENT',
+        merchant: 'Harrow Street Residences',
+        category: 'Rent & Mortgage',
+        method: 'bill_pay',
+        date: iso,
+      });
+    }
+
+    // Utilities mid-month.
+    if (day === 12) {
+      entries.push({
+        accountId: checking.id,
+        direction: 'debit',
+        amount: amountBetween(r, 8400, 17600),
+        description: 'COLUMBUS POWER & LIGHT AUTOPAY',
+        merchant: 'Columbus Power & Light',
+        category: 'Utilities',
+        method: 'ach',
+        date: iso,
+      });
+    }
+
+    // Savings sweep the day after payday.
+    if (day === 16) {
+      const amount = amountBetween(r, 25000, 60000);
+      entries.push({
+        accountId: checking.id,
+        direction: 'debit',
+        amount,
+        description: `Transfer to Savings ${ids.maskAccount(savings.account_number)}`,
+        category: 'Transfers',
+        method: 'internal',
+        date: iso,
+      });
+      entries.push({
+        accountId: savings.id,
+        direction: 'credit',
+        amount,
+        description: `Transfer from Checking ${ids.maskAccount(checking.account_number)}`,
+        category: 'Transfers',
+        method: 'internal',
+        date: iso,
+      });
+    }
+
+    // Monthly interest on savings.
+    if (day === lastDay) {
+      entries.push({
+        accountId: savings.id,
+        direction: 'credit',
+        amount: amountBetween(r, 900, 4200),
+        description: 'INTEREST PAID',
+        category: 'Income',
+        method: 'interest',
+        date: iso,
+      });
+    }
+
+    // Card payment on the 20th: out of checking and against the card balance.
+    if (day === 20 && cardAccountId) {
+      const amount = amountBetween(r, 18000, 52000);
+      const label = card ? `••••${card.last4}` : '';
+      entries.push({
+        accountId: checking.id,
+        direction: 'debit',
+        amount,
+        description: `ROCKFIELD CARD PAYMENT ${label}`.trim(),
+        category: 'Transfers',
+        method: 'internal',
+        date: iso,
+      });
+      entries.push({
+        accountId: cardAccountId,
+        direction: 'credit',
+        amount,
+        description: 'PAYMENT THANK YOU - ONLINE',
+        category: 'Transfers',
+        method: 'internal',
+        date: iso,
+      });
+    }
+
+    // Day-to-day card spending.
+    const purchases = isWeekend(cursor) ? (r() < 0.7 ? 2 : 1) : (r() < 0.5 ? 1 : r() < 0.85 ? 2 : 3);
+    for (let i = 0; i < purchases; i += 1) {
+      const [category, , min, max] = weightedCategory(r);
+      const merchant = pick(MERCHANTS[category] || ['Rockfield Merchant'], r);
+      // Roughly a third of card spending sits on the credit card, so both the
+      // debit and the credit product have a history worth looking at.
+      const onCard = Boolean(cardAccountId) && r() < 0.35;
+      entries.push({
+        accountId: onCard ? cardAccountId : checking.id,
+        direction: 'debit',
+        amount: amountBetween(r, min, max),
+        description: `${merchant.toUpperCase()} ${['COLUMBUS OH', 'DUBLIN OH', 'WESTERVILLE OH'][Math.floor(r() * 3) % 3]}`,
+        merchant,
+        category,
+        method: 'card',
+        date: new Date(cursor.getTime() + Math.floor(r() * 36000000)).toISOString(),
+        location: 'Columbus, OH',
+      });
+    }
+
+    // The occasional ATM withdrawal.
+    if (r() < 0.06) {
+      entries.push({
+        accountId: checking.id,
+        direction: 'debit',
+        amount: amountBetween(r, 4000, 20000) - (amountBetween(r, 4000, 20000) % 2000),
+        description: 'ATM WITHDRAWAL - 45 HIGH ST COLUMBUS OH',
+        category: 'Cash & ATM',
+        method: 'atm',
+        date: iso,
+      });
+    }
+
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+
+  entries.sort((a, b) => (a.date < b.date ? -1 : 1));
+  for (const entry of entries) {
+    await ledger.post({ ...entry, status: 'posted', createdBy: 'system' });
+  }
+  return entries;
+}
+
+/** A couple of entries still in flight, so pending states are visible. */
+async function addPending(checking, card) {
+  await ledger.post({
+    accountId: checking.id,
+    direction: 'debit',
+    amount: 6742,
+    description: 'BASALT COFFEE COLUMBUS OH',
+    merchant: 'Basalt Coffee',
+    category: 'Dining',
+    method: 'card',
+    status: 'pending',
+    createdBy: 'system',
+  });
+  if (card) {
+    await ledger.post({
+      accountId: card.id,
+      direction: 'debit',
+      amount: 12999,
+      description: 'CLOUDLINE STORAGE ANNUAL',
+      merchant: 'Cloudline Storage',
+      category: 'Subscriptions',
+      method: 'card',
+      status: 'pending',
+      createdBy: 'system',
+    });
+  }
+}
+
+async function seedBeneficiaries(user) {
+  const rows = [
+    {
+      nickname: 'Mum', name: 'Eleanor Vance', bank_name: 'First Coast Bank',
+      account_number: '4410028866', routing_number: ids.completeRouting('06100022'),
+      account_type: 'checking', type: 'domestic_ach', relationship: 'Family',
+    },
+    {
+      nickname: 'Landlord', name: 'Harrow Street Residences LLC', bank_name: 'Union Trust',
+      account_number: '9930114725', routing_number: ids.completeRouting('04400011'),
+      account_type: 'checking', type: 'domestic_ach', relationship: 'Housing',
+    },
+    {
+      nickname: 'Sam (Berlin)', name: 'Samira Okonkwo', bank_name: 'Nordbank AG',
+      account_number: 'DE89370400440532013000', routing_number: '', swift: 'NORDDEFFXXX',
+      account_type: 'checking', type: 'international_wire', country: 'Germany', relationship: 'Friend',
+      bank_address: 'Kurfurstendamm 21, 10719 Berlin, Germany',
+    },
+  ];
+  for (const row of rows) {
+    await db.beneficiaries.insert({
+      id: ids.uuid(),
+      created_at: nowIso(),
+      user_id: user.id,
+      status: 'verified',
+      verified_at: nowIso(),
+      last_used_at: null,
+      country: 'United States',
+      swift: '',
+      bank_address: '',
+      address: '',
+      memo: '',
+      ...row,
+    });
+  }
+}
+
+async function seedPayees(user) {
+  const rows = [
+    { name: 'Columbus Power & Light', category: 'Utilities', account_number: '7741-88213', autopay: true, amount: 12400, due_day: 12 },
+    { name: 'Fibernet Broadband', category: 'Utilities', account_number: 'FB-559210', autopay: true, amount: 8999, due_day: 8 },
+    { name: 'Sentinel Mutual Auto', category: 'Insurance', account_number: 'SM-4471902', autopay: false, amount: 15600, due_day: 22 },
+  ];
+  for (const row of rows) {
+    await db.payees.insert({
+      id: ids.uuid(),
+      created_at: nowIso(),
+      user_id: user.id,
+      status: 'active',
+      phone: '',
+      address: '',
+      last_paid_at: null,
+      ...row,
+    });
+  }
+}
+
+async function seedMessages(user) {
+  const thread = ids.uuid();
+  await db.messages.insert({
+    id: ids.uuid(),
+    created_at: new Date(Date.now() - 86400000 * 3).toISOString(),
+    thread_id: thread,
+    user_id: user.id,
+    from_side: 'bank',
+    author_name: 'Rockfield Client Services',
+    subject: 'Welcome to Rockfield',
+    body: 'Your online banking is live. Set a transfer PIN under Security before your first payment, and add the people you pay regularly as beneficiaries - transfers to a verified beneficiary clear without a second review.',
+    read_at: null,
+    attachments: null,
+  });
+}
+
+/* ------------------------------------------------------------------ run --- */
+
+async function ensureSeed(options = {}) {
+  const existing = await db.users.count();
+  if (existing > 0 && !options.force) return { seeded: false, users: existing };
+
+  const adminEmail = process.env.BANK_ADMIN_EMAIL || 'admin@rockfieldbank.com';
+  const adminPassword = process.env.BANK_ADMIN_PASSWORD || 'Rockfield#Admin2026';
+  const { user: admin } = await users.createUser({
+    email: adminEmail,
+    password: adminPassword,
+    role: 'admin',
+    firstName: 'Avery',
+    lastName: 'Stone',
+    phone: '(614) 555-0101',
+    status: 'active',
+    emailVerified: true,
+    mustChangePassword: false,
+    kycStatus: 'verified',
+    tier: 'Staff',
+    twoFactorEnabled: false,
+    city: BANK.address.city,
+    state: BANK.address.state,
+    country: 'United States',
+  });
+
+  const demoEmail = process.env.BANK_DEMO_EMAIL || 'demo@rockfieldbank.com';
+  const demoPassword = process.env.BANK_DEMO_PASSWORD || 'Bedrock#Demo2026';
+  const { user: customer } = await users.createUser({
+    email: demoEmail,
+    password: demoPassword,
+    role: 'customer',
+    firstName: 'Jordan',
+    middleName: 'R',
+    lastName: 'Ellis',
+    dateOfBirth: '1989-04-17',
+    ssn: '412889021',
+    phone: '(614) 555-0184',
+    mobile: '(614) 555-0184',
+    addressLine1: '148 Harrow Street',
+    addressLine2: 'Apt 12B',
+    city: 'Columbus',
+    state: 'OH',
+    postalCode: '43215',
+    employmentStatus: 'Employed',
+    employer: 'Meridian Logistics',
+    occupation: 'Operations Manager',
+    annualIncome: 9800000,
+    sourceOfFunds: 'Salary',
+    idType: 'Driver’s license',
+    idNumber: 'OH-TR447120',
+    idState: 'OH',
+    idExpires: '2029-04-17',
+    kycStatus: 'verified',
+    emailVerified: true,
+    mustChangePassword: false,
+    twoFactorEnabled: true,
+    transferPin: '4417',
+    securityQuestion: 'What was the name of your first pet?',
+    securityAnswer: 'pepper',
+    tier: 'Premier',
+    relationshipManager: 'Avery Stone',
+    openedBy: admin.id,
+  });
+
+  // The relationship starts six months ago, so the seeded history has somewhere
+  // to sit and the first statement is not also the account's first day.
+  const relationshipStart = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() - 5, 1)).toISOString();
+
+  const checking = await accountsLib.openAccount(customer, {
+    productId: 'everyday_checking', type: 'checking', isPrimary: true, nickname: 'Everyday',
+    createdBy: 'system', openedAt: relationshipStart,
+  });
+  const savings = await accountsLib.openAccount(customer, {
+    productId: 'high_yield_savings', type: 'savings', nickname: 'Rainy day', openingBalance: 1284000,
+    openingDescription: 'Opening balance', createdBy: 'system', openedAt: relationshipStart,
+    openingDate: relationshipStart,
+  });
+  const cardAccount = await accountsLib.openAccount(customer, {
+    productId: 'rockfield_signature_card', type: 'credit', nickname: 'Signature card', creditLimit: 1500000,
+    createdBy: 'system', openedAt: relationshipStart,
+  });
+
+  // Seed the opening balance on checking first so the running balance never
+  // goes negative across six months of spending.
+  await ledger.post({
+    accountId: checking.id,
+    direction: 'credit',
+    amount: 640000,
+    description: 'Opening deposit',
+    method: 'adjustment',
+    category: 'Income',
+    status: 'posted',
+    createdBy: 'system',
+    date: relationshipStart,
+  });
+
+  const debitCard = await accountsLib.issueCard(customer, checking, { brand: 'visa', kind: 'debit' });
+  const creditCard = await accountsLib.issueCard(customer, cardAccount, { brand: 'mastercard', kind: 'credit' });
+
+  await generateHistory({
+    user: customer,
+    checking,
+    savings,
+    card: creditCard,
+    cardAccountId: cardAccount.id,
+    monthlyIncome: 780000,
+    seed: 20260912,
+  });
+  await addPending(checking, cardAccount);
+  await seedBeneficiaries(customer);
+  await seedPayees(customer);
+  await seedMessages(customer);
+
+  // A second customer, so the console has more than one row to show.
+  const { user: second, temporaryPassword } = await users.createUser({
+    email: 'mara.velez@example.com',
+    role: 'customer',
+    firstName: 'Mara',
+    lastName: 'Velez',
+    dateOfBirth: '1994-11-02',
+    ssn: '556210447',
+    phone: '(614) 555-0199',
+    addressLine1: '2210 Ridgeway Ave',
+    city: 'Dublin',
+    state: 'OH',
+    postalCode: '43017',
+    employmentStatus: 'Self-employed',
+    occupation: 'Architect',
+    annualIncome: 11200000,
+    kycStatus: 'pending',
+    tier: 'Standard',
+    openedBy: admin.id,
+  });
+  const maraChecking = await accountsLib.openAccount(second, {
+    productId: 'premier_checking', type: 'checking', isPrimary: true, openingBalance: 2450000,
+    openingDescription: 'Opening deposit - cashier check', createdBy: 'system',
+  });
+  await accountsLib.issueCard(second, maraChecking, { brand: 'visa', kind: 'debit' });
+
+  await db.settings.insert({
+    id: 'global',
+    values: { ...DEFAULT_SETTINGS },
+    updated_at: nowIso(),
+  });
+
+  await require('./audit').log({
+    action: 'system.seeded',
+    category: 'admin',
+    actor: { id: admin.id, email: admin.email, role: 'admin' },
+    detail: 'Initial data created',
+    severity: 'notice',
+  });
+
+  console.log(`[rockfield] seeded: admin ${adminEmail}, customer ${demoEmail}`);
+  return {
+    seeded: true,
+    admin: { email: adminEmail, password: adminPassword },
+    customer: { email: demoEmail, password: demoPassword },
+    secondary: { email: second.email, password: temporaryPassword },
+    accounts: [checking.account_number, savings.account_number, cardAccount.account_number],
+    cards: [debitCard.last4, creditCard.last4],
+  };
+}
+
+/**
+ * Seed once per process, on the first request that needs data. Several
+ * requests arriving together share the same promise rather than racing to
+ * create two administrators.
+ */
+let seeding = null;
+function ensureSeedOnce() {
+  if (!seeding) {
+    seeding = ensureSeed().catch((err) => {
+      seeding = null;
+      console.warn('[rockfield] seed failed:', err.message);
+      return { seeded: false, error: err.message };
+    });
+  }
+  return seeding;
+}
+
+module.exports = { ensureSeed, ensureSeedOnce, generateHistory, rng };

@@ -1,4 +1,4 @@
-# Deploying Merkel Constructions to Vercel
+# Deploying Rockfield National Bank to Vercel
 
 A step-by-step guide for the workflow: replace the images, fork to your GitHub,
 deploy on Vercel, then switch the backend on.
@@ -30,22 +30,23 @@ and local JSON files otherwise, so development works offline with no setup.
 
 All current artwork is generated blueprint-style placeholder SVG. The five
 page-level images need no code change at all: **drop them into
-`public/assets/img/` named `merkel1` to `merkel5`** and the next build picks them
+`public/assets/bank/` named `rockfield1` to `rockfield6`** and the next build picks them
 up. Any of `.webp`, `.avif`, `.jpg`, `.jpeg`, `.png` works, and `.webp` is chosen
 first if more than one is present.
 
 | File | Where it appears | Suggested size |
 | ---- | ---------------- | -------------- |
-| `merkel1` | The underlay behind every page, and the first hero slide | 2400 x 1400 |
-| `merkel2` | Capabilities chapter, and the second hero slide | 1920 x 1200 |
-| `merkel3` | Practice chapter, the third hero slide, and the `/careers` header | 1920 x 1200 |
-| `merkel4` | Selected work chapter and the `/projects` header | 1920 x 1200 |
-| `merkel5` | Contact chapter and the `/contact` header | 1920 x 1200 |
+| `rockfield1` | The home page hero and the first slide | 2400 x 1400 |
+| `rockfield2` | The `/personal` header and the second slide | 1920 x 1200 |
+| `rockfield3` | The `/business` header and the third slide | 1920 x 1200 |
+| `rockfield4` | The security section and the `/rates` header | 1920 x 1200 |
+| `rockfield5` | The contact section and the `/contact` header | 1920 x 1200 |
+| `rockfield6` | The `/careers` header | 1920 x 1200 |
 
 Project and service artwork is named per item in `src/data/projects.json` and
 `src/data/services.json`, so those take any filename you like.
 
-`merkel1` carries the most weight: it is fixed behind the whole site, so pick the
+`rockfield1` carries the most weight: it is the first thing anyone sees, so pick the
 one that reads as the studio's signature and has calm space rather than busy
 detail in the middle, where headlines sit.
 
@@ -64,7 +65,7 @@ size 760 x 950 (4:5 portrait).
 
 Notes:
 
-- Names are matched without regard to case, so `Merkel3.png` and `merkel3.png`
+- Names are matched without regard to case, so `Rockfield3.png` and `rockfield3.png`
   both work. That matters: the deploy runs on Linux, where the two are
   different files.
 - Keep files under about 400 KB each. The underlay is fetched on every page, so
@@ -128,6 +129,7 @@ come next.
    | ---- | ------- |
    | [`supabase/migrations/0001_init.sql`](../supabase/migrations/0001_init.sql) | `admins`, `is_admin()`, `enquiries`, `applications`, `chat_sessions`, `chat_messages`, the activity trigger and the realtime publication |
    | [`supabase/migrations/0002_email.sql`](../supabase/migrations/0002_email.sql) | `email_threads`, `email_messages` (skip if you are not receiving mail) |
+   | [`supabase/migrations/0003_bank.sql`](../supabase/migrations/0003_bank.sql) | The banking application: customers, accounts, the ledger, transfers, cards, documents, alerts, the activity log, sessions and settings |
 
    Everything is behind row level security. `enquiries` has no anon policy at all:
    writes arrive through the API using the service role.
@@ -165,7 +167,7 @@ come next.
 
 6. **Redeploy** so the function picks the variables up.
 
-The function logs `[merkel] storage: Supabase` on the next request. Confirm what the
+The function logs `[rockfield] storage: Supabase` on the next request. Confirm what the
 running server can actually see with:
 
 ```bash
@@ -191,7 +193,7 @@ those can stay set without effect.
 
 ---
 
-## Step 5: Open the studio desk
+## Step 5: Open the client services desk
 
 `/admin` is where enquiries, live chat and studio mail are read and answered. It is
 not linked from the site and carries `noindex`; access is decided by Supabase auth,
@@ -230,7 +232,38 @@ The page refreshes itself every few seconds while it is the visible tab.
 
 ---
 
-## Step 6: Send enquiries and chat to your inbox (Resend)
+## Step 6: Set the banking key, before the first customer
+
+The banking application encrypts Social Security numbers, identity document
+numbers and card numbers with AES-256-GCM. The key comes from
+`BANK_ENCRYPTION_KEY`:
+
+```bash
+openssl rand -hex 32
+```
+
+Set it in Vercel under Settings, Environment Variables, for Production and
+Preview, and redeploy. Without it the application derives a key from a fixed
+development string and warns on every boot - which is fine locally and is not
+fine in production. Rotating it later makes everything already encrypted
+unreadable, so set it once, before the first customer is registered.
+
+While you are there, set the first administrator:
+
+| Variable | Value |
+|---|---|
+| `BANK_ENCRYPTION_KEY` | the 64-character hex string from above |
+| `BANK_ADMIN_EMAIL` | the address you will sign in with |
+| `BANK_ADMIN_PASSWORD` | a strong password, changed after the first sign-in |
+| `BANK_ALERT_FROM` | `Rockfield National Bank <alerts@yourdomain.com>` |
+| `PUBLIC_BASE_URL` | `https://yourdomain.com`, for links inside alert emails |
+
+The bank seeds itself on the first request against an empty database: the
+administrator above, a demonstration customer and six months of history. Sign
+in at `/console`, and **delete the demonstration customers before using this
+for anything real** - they have balances and history that are not yours.
+
+## Step 7: Send enquiries and chat to your inbox (Resend)
 
 1. Sign up at <https://resend.com> (free tier: 3,000 emails a month).
 2. **API Keys, Create API Key**, and copy it.
@@ -240,7 +273,7 @@ The page refreshes itself every few seconds while it is the visible tab.
    | ---- | ----- |
    | `RESEND_API_KEY` | the key you copied |
    | `FORM_TO` | where enquiries land (comma-separate for several) |
-   | `FORM_FROM` | `Merkel Website <onboarding@resend.dev>` to start |
+   | `FORM_FROM` | `Rockfield National Bank <onboarding@resend.dev>` to start |
 
 4. **Redeploy.**
 
@@ -250,12 +283,12 @@ directly. Set `CHAT_NOTIFY=off` to keep enquiry emails but stop chat emails.
 
 For production, verify your domain in Resend (**Domains, Add Domain**, then add the
 DNS records) and change `FORM_FROM` to something like
-`Merkel Website <studio@yourdomain.com>`. Mail from a verified domain is far less
+`Rockfield National Bank <support@yourdomain.com>`. Mail from a verified domain is far less
 likely to be treated as spam.
 
 ---
 
-## Step 7: Receive mail on your domain and forward it
+## Step 8: Receive mail on your domain and forward it
 
 This gives you `studio@yourdomain.com` that lands in whatever inbox you actually read.
 The endpoint is `POST /api/inbound/resend`.
@@ -303,7 +336,7 @@ domain or email provider instead. The endpoint stays closed until
 
 ---
 
-## Step 8: Optional, send to a desk provider as well
+## Step 9: Optional, send to a desk provider as well
 
 Set `NOTIFY_WEBHOOK_URL` to any endpoint that accepts a JSON `POST`:
 
@@ -324,7 +357,7 @@ Email and webhook are independent; configure either or both.
 
 ---
 
-## Step 9: Test it
+## Step 10: Test it
 
 On your live URL:
 
@@ -389,6 +422,14 @@ notifications, so you can work entirely offline. To test notifications locally, 
 | `DATA_DIR` | no | Override local file storage path |
 | `RATE_LIMIT_WINDOW_MS` / `RATE_LIMIT_MAX` | no | API rate limiting (default 60000 / 30) |
 | `PORT` | no | Local port (default 3000) |
+| `BANK_ENCRYPTION_KEY` | **for the bank** | AES-256-GCM key for SSNs, ID numbers and card numbers. 64 hex characters. Set before the first customer |
+| `BANK_ADMIN_EMAIL` / `BANK_ADMIN_PASSWORD` | for the bank | The first administrator, created when the database is empty |
+| `BANK_DEMO_EMAIL` / `BANK_DEMO_PASSWORD` | no | The seeded demonstration customer |
+| `BANK_ALERT_FROM` | for email | Sender for banking alerts (falls back to `FORM_FROM`) |
+| `PUBLIC_BASE_URL` | for email | Absolute base for the links inside alert emails |
+| `BANK_RATE_LIMIT_MAX` | no | Requests per minute per IP against `/api/bank` (default 300) |
+| `BANK_LOGIN_RATE_LIMIT` | no | Sign-in attempts per five minutes per IP (default 20) |
+| `BANK_COOKIE_INSECURE` | no | `1` drops the Secure flag from the session cookie, for plain HTTP locally |
 
 Legacy aliases `CONTACT_NOTIFY_EMAIL` and `NOTIFY_FROM` still work if `FORM_TO` and
 `FORM_FROM` are unset.

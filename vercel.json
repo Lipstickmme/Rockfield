@@ -6,14 +6,35 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "rewrites": [
-    { "source": "/projects/:id", "destination": "/project.html" },
-    { "source": "/services/:id", "destination": "/service.html" }
+    {
+      "source": "/personal",
+      "destination": "/services.html"
+    },
+    {
+      "source": "/business",
+      "destination": "/projects.html"
+    },
+    {
+      "source": "/support",
+      "destination": "/contact.html"
+    },
+    {
+      "source": "/login",
+      "destination": "/signin.html"
+    },
+    {
+      "source": "/desk",
+      "destination": "/admin.html"
+    }
   ],
   "headers": [
     {
       "source": "/assets/(.*)",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=604800, immutable" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=604800, immutable"
+        }
       ]
     }
   ]

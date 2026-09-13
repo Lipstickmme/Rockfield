@@ -1,13 +1,13 @@
 'use strict';
 
 (function () {
-  const M = window.MERKEL; if (!M) return;
+  const M = window.ROCKFIELD || window.MERKEL; if (!M) return;
   const wrap = document.getElementById('roles');
   if (!wrap) return;
   const esc = M.esc;
   const FALLBACK = [
-    { id: 'senior-structural', title: 'Senior Structural Engineer', team: 'Structural', location: 'Studio', type: 'Full time', summary: 'Lead the structural design of tall buildings and long-span structures from concept through to site.' },
-    { id: 'bridge-engineer', title: 'Bridge Engineer', team: 'Civil & Infrastructure', location: 'Site based', type: 'Full time', summary: 'Design bridges and marine structures for demanding wind and durability requirements.' }
+    { id: 'personal-banker', title: 'Personal Banker', team: 'Retail', location: 'Columbus, OH', type: 'Full time', summary: 'Open accounts, sit with people through the hard conversations about money, and know when to escalate rather than improvise.' },
+    { id: 'payments-operations-analyst', title: 'Payments Operations Analyst', team: 'Payments', location: 'Columbus, OH', type: 'Full time', summary: 'Review and release outgoing wires and ACH files, and hold the ones that should not go.' }
   ];
 
   const role = (r) => `

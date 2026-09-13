@@ -14,7 +14,7 @@ function autoReply(text) {
   const has = (...words) => words.some((w) => t.includes(w));
 
   if (has('hello', 'hi ', 'hey', 'good morning', 'good afternoon') || t === 'hi') {
-    return "Hi, you're through to Merkel Constructions. What are you building, and how can we help?";
+    return "Hi, you're through to Rockfield client services. How can we help? Please never send a password, a card number or a one-time code in chat.";
   }
   if (has('career', 'job', 'hiring', 'vacancy', 'apply', 'position', 'role')) {
     return 'We are hiring across structural, civil, mechanical and digital teams. You can see open roles on our Careers page, or tell me which discipline interests you.';
@@ -29,7 +29,7 @@ function autoReply(text) {
     return 'That is squarely in our wheelhouse. Share a few details about the project and where it gets difficult, and we will point you to the right engineer.';
   }
   if (has('contact', 'call', 'phone', 'email', 'meet', 'speak')) {
-    return 'The fastest route is the contact page, or email studio@merkelconstructions.com. Leave your email here and we will reach out within two working days.';
+    return 'The fastest route is 1-800-762-5343, or the contact page. Leave your email here and a banker will come back to you the same business day.';
   }
   if (has('thanks', 'thank you', 'cheers', 'great')) {
     return 'Any time. Anything else I can help with?';
@@ -64,7 +64,7 @@ exports.postMessage = async (req, res, next) => {
     try {
       handedOver = await chatStore.isHandedOver(sessionId);
     } catch (err) {
-      console.error('[merkel] chat handover check failed:', err.message);
+      console.error('[rockfield] chat handover check failed:', err.message);
     }
 
     const reply = handedOver ? null : { role: 'agent', text: autoReply(text), at: new Date(Date.now() + 1).toISOString() };
@@ -75,7 +75,7 @@ exports.postMessage = async (req, res, next) => {
       await chatStore.append(sessionId, messages);
     } catch (err) {
       stored = false;
-      console.error('[merkel] failed to persist chat message:', err.message);
+      console.error('[rockfield] failed to persist chat message:', err.message);
     }
 
     // Route the visitor's message to the inbox so a human can pick it up.
@@ -116,7 +116,7 @@ exports.notifyMessage = async (req, res, next) => {
         replied = true;
       }
     } catch (err) {
-      console.error('[merkel] failed to post chat reply:', err.message);
+      console.error('[rockfield] failed to post chat reply:', err.message);
     }
 
     await notify.chatMessage(sessionId, text);
@@ -139,7 +139,7 @@ exports.getHistory = async (req, res, next) => {
       convo = await chatStore.load(sessionId);
     } catch (err) {
       // A storage fault should cost the visitor their history, not the widget.
-      console.error('[merkel] failed to load chat history:', err.message);
+      console.error('[rockfield] failed to load chat history:', err.message);
     }
     return res.json({ sessionId, messages: convo.messages });
   } catch (err) {

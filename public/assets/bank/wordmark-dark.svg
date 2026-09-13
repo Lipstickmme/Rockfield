@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 96" width="520" height="96" role="img" aria-label="Rockfield National Bank">
+  <defs><linearGradient id="m" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b08341"/><stop offset="1" stop-color="#7d5526"/></linearGradient></defs>
+  <rect x="0" y="14" width="68" height="68" rx="16" fill="url(#m)"/>
+  <text x="34" y="62" font-family="Georgia,'Times New Roman',serif" font-size="40" font-weight="700" fill="#fff" text-anchor="middle">R</text>
+  <text x="88" y="50" font-family="Georgia,'Times New Roman',serif" font-size="34" font-weight="600" fill="#11213a" letter-spacing="-0.5">Rockfield</text>
+  <text x="89" y="74" font-family="Helvetica,Arial,sans-serif" font-size="13" font-weight="600" fill="#7d6a4e" letter-spacing="4.6">NATIONAL BANK</text>
+</svg>

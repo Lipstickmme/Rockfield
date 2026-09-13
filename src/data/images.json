@@ -1,77 +1,84 @@
 {
-  "_comment": "Page-level image slots. Each slot lists the files it would like, best first, and the placeholder it falls back on if none is there. Names are matched without regard to case and any of .webp .avif .jpg .jpeg .png works, with .webp preferred, so adding photography is a file drop into public/assets/img/ and needs no code change. The second and third preferences let a site with only some of merkel1..merkel5 still show photography everywhere rather than a mix of photographs and placeholder drawings. Per-project images live in projects.json; the CEO portrait lives in leadership.json.",
+  "_comment": "Page-level image slots. Each slot lists the files it would like, best first, and the placeholder it falls back on if none is there. Names are matched without regard to case and any of .webp .avif .jpg .jpeg .png .svg works, with .webp preferred, so adding photography is a file drop into public/assets/bank/ and needs no code change. The fallbacks are the generated placeholder artwork that ships with the build.",
   "slots": {
     "underlay": {
       "prefer": [
-        "m1",
-        "mk1",
-        "merkel1"
+        "rockfield1",
+        "rf1"
       ],
-      "fallback": "/assets/slides/blueprint-01.webp"
+      "fallback": "/assets/bank/hero.svg"
     },
     "capabilities": {
       "prefer": [
-        "m2",
-        "mk2",
-        "merkel2"
+        "rockfield2",
+        "rf2"
       ],
-      "fallback": "/assets/slides/blueprint-02.webp"
+      "fallback": "/assets/bank/personal.svg"
     },
     "metrics": {
       "prefer": [
-        "m3",
-        "mk3",
-        "merkel3"
+        "rockfield3",
+        "rf3"
       ],
-      "fallback": "/assets/slides/blueprint-03.webp"
+      "fallback": "/assets/bank/business.svg"
     },
     "work": {
       "prefer": [
-        "m4",
-        "mk4",
-        "merkel4"
+        "rockfield4",
+        "rf4"
       ],
-      "fallback": "/assets/img/proj-helix-tower.svg"
+      "fallback": "/assets/bank/security.svg"
     },
     "contact": {
       "prefer": [
-        "mk5",
-        "mk3",
-        "mk1"
+        "rockfield5",
+        "rf5"
       ],
-      "fallback": "/assets/img/contact.svg"
+      "fallback": "/assets/bank/mobile.svg"
     },
     "projectsHeader": {
       "prefer": [
-        "m3",
-        "mk1",
-        "merkel4"
+        "rockfield3",
+        "rf3"
       ],
-      "fallback": "/assets/img/proj-helix-tower.svg"
+      "fallback": "/assets/bank/business.svg"
     },
     "careersHeader": {
       "prefer": [
-        "m1",
-        "addd",
-        "merkel3"
+        "rockfield6",
+        "rf6"
       ],
-      "fallback": "/assets/img/careers.svg"
+      "fallback": "/assets/bank/hero.svg"
     },
     "contactHeader": {
       "prefer": [
-        "m4",
-        "add2",
-        "merkel5"
+        "rockfield5",
+        "rf5"
       ],
-      "fallback": "/assets/img/contact.svg"
+      "fallback": "/assets/bank/mobile.svg"
     }
   },
   "heroSlides": [
     {
       "prefer": [
-        "merkel2"
+        "rockfield1",
+        "rf1"
       ],
-      "fallback": "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/merkel2-X5a3OtwTvD1tkkyJ2iLPGsVU7Xgfqt.png"
+      "fallback": "/assets/bank/hero.svg"
+    },
+    {
+      "prefer": [
+        "rockfield2",
+        "rf2"
+      ],
+      "fallback": "/assets/bank/personal.svg"
+    },
+    {
+      "prefer": [
+        "rockfield3",
+        "rf3"
+      ],
+      "fallback": "/assets/bank/business.svg"
     }
   ]
 }

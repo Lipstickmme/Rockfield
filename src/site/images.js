@@ -5,8 +5,9 @@
  *
  * Every slot names the file it would rather have and the placeholder it uses
  * until that file exists. So adding real photography is a file drop, not a
- * code change: put merkel1 .. merkel5 into public/assets/img/ in any common
- * format and the next build picks them up.
+ * code change: put rockfield1 .. rockfield6 into public/assets/bank/ in any
+ * common format and the next build picks them up in place of the generated
+ * placeholder artwork.
  */
 
 const fs = require('fs');
@@ -18,14 +19,16 @@ const PUBLIC_DIR = path.join(__dirname, '..', '..', 'public');
 // Preference order, best format first. WebP wins, so a converted copy is used
 // in place of a heavy original without anyone having to delete the original.
 const EXTENSIONS = ['.webp', '.avif', '.jpg', '.jpeg', '.png', '.svg'];
-const DIRS = ['/assets/img/', '/assets/slides/'];
+const DIRS = ['/assets/bank/', '/assets/img/'];
 
 const found = [];
 
 /**
- * Every candidate file, indexed by lower-cased name.
+ * Every candidate file, indexed by lower-cased name. Both directories are
+ * scanned so artwork dropped into either one is found; /assets/img/ is empty
+ * on a fresh checkout and exists for supplied photography.
  *
- * Case-insensitive on purpose: an upload named Merkel3.png has to be found on
+ * Case-insensitive on purpose: an upload named Rockfield3.png has to be found on
  * Linux, where the deploy runs, not only on the machine it was named on.
  */
 const index = new Map();
@@ -69,7 +72,7 @@ Object.entries(data.slots).forEach(([slot, spec]) => {
 });
 images.heroSlides = data.heroSlides.map(resolve);
 
-/** What the build should report: which real images were picked up, if any. */
+/** What the build should report: which supplied images were picked up, if any. */
 images._resolved = found;
 
 module.exports = images;
