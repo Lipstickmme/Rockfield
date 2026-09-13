@@ -13,6 +13,7 @@ const auth = require('../../bank/auth');
 const users = require('../../bank/users');
 const security = require('../../bank/security');
 const settings = require('../../bank/settings');
+const config = require('../../utils/config');
 const alerts = require('../../bank/alerts');
 const audit = require('../../bank/audit');
 const seed = require('../../bank/seed');
@@ -106,8 +107,8 @@ const login = asyncHandler(async (req, res) => {
       sentTo: security.maskEmail(user.email),
       expiresAt,
       // Without a mail provider the code cannot reach anyone, so it comes back
-      // here instead. Configured deployments never see this field.
-      devCode: process.env.RESEND_API_KEY ? undefined : code,
+      // here instead. Off on a deployment, and off once mail is configured.
+      devCode: config.showDevCodes() ? code : undefined,
       challengeId: user.id,
     });
   }
@@ -191,7 +192,7 @@ const resend = asyncHandler(async (req, res) => {
     heading: 'Your sign-in code',
     intro: `Enter ${code} to finish signing in.`,
   });
-  res.json({ status: 'sent', expiresAt, devCode: process.env.RESEND_API_KEY ? undefined : code });
+  res.json({ status: 'sent', expiresAt, devCode: config.showDevCodes() ? code : undefined });
 });
 
 const logout = asyncHandler(async (req, res) => {
@@ -293,7 +294,9 @@ const forgot = asyncHandler(async (req, res) => {
       action: 'security.reset_requested', category: 'security', userId: user.id, req,
       actor: { id: user.id, email, role: user.role }, detail: 'Password reset code sent',
     });
-    if (!process.env.RESEND_API_KEY) {
+    // A reset code returned here is a reset code for whoever asked, so it is
+    // only ever offered where nobody but the developer can be asking.
+    if (config.showDevCodes()) {
       console.log(`[rockfield] password reset code for ${email}: ${code}`);
       return res.json({ status: 'sent', devCode: code });
     }

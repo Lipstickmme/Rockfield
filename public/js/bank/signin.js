@@ -35,7 +35,16 @@
     if (reason === 'expired') toast('Your session timed out. Sign in again to carry on.', '', 'Signed out');
     if (reason === 'signed-out') toast('You are signed out.', 'ok');
 
-    // The demonstration credentials, filled in rather than typed.
+    // The demonstration credentials appear only where the bank is already
+    // handing one-time codes back in its responses - a laptop, or a deployment
+    // that has deliberately asked for it. A live bank shows nobody its logins.
+    const demoCard = qs('[data-demo-card]');
+    if (demoCard) {
+      api.get('/config')
+        .then((cfg) => { if (cfg && cfg.devCodes) demoCard.classList.remove('rf-hide'); })
+        .catch(() => {});
+    }
+
     qsa('[data-fill]').forEach((button) => button.addEventListener('click', () => {
       const which = button.getAttribute('data-fill');
       qs('#rf-email').value = which === 'admin' ? 'admin@rockfieldbank.com' : 'demo@rockfieldbank.com';

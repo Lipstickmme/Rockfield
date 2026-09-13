@@ -47,6 +47,28 @@ const supabaseServiceKey = () =>
   pick('SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_SECRET_KEY', 'NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY');
 
 const resendApiKey = () => pick('RESEND_API_KEY');
+
+/** True when this process looks like a deployment rather than a laptop. */
+const isDeployed = () =>
+  Boolean(pick('VERCEL', 'VERCEL_ENV', 'RENDER', 'FLY_APP_NAME')) ||
+  process.env.NODE_ENV === 'production';
+
+/**
+ * Whether a one-time code may be handed back in an API response.
+ *
+ * Without a mail provider a code cannot reach anybody, so returning it keeps
+ * local development able to sign into itself. On a deployment the same
+ * behaviour is an account takeover: /auth/forgot would hand a reset code to
+ * anyone who knows an address, and /auth/reset would take it. So it is off
+ * wherever this looks deployed, and off whenever mail is configured, unless
+ * BANK_SHOW_DEV_CODES explicitly turns it back on for a demonstration.
+ */
+function showDevCodes() {
+  const forced = pick('BANK_SHOW_DEV_CODES');
+  if (forced) return /^(1|true|yes|on)$/i.test(forced);
+  if (resendApiKey()) return false;
+  return !isDeployed();
+}
 const resendWebhookSecret = () => pick('RESEND_WEBHOOK_SECRET');
 
 const formTo = () => pick('FORM_TO', 'CONTACT_NOTIFY_EMAIL');
@@ -103,6 +125,8 @@ const ACCEPTED_NAMES = {
 module.exports = {
   ACCEPTED_NAMES,
   pick,
+  isDeployed,
+  showDevCodes,
   supabaseUrl,
   supabaseAnonKey,
   supabaseServiceKey,

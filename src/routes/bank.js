@@ -67,6 +67,9 @@ router.get('/config', asyncHandler(async (req, res) => {
     announcementLevel: cfg.announcementLevel || 'info',
     maintenanceMode: Boolean(cfg.maintenanceMode),
     emailConfigured: Boolean(process.env.RESEND_API_KEY),
+    // The sign-in page only offers the demonstration logins where one-time
+    // codes are being handed back anyway - that is, never on a deployment.
+    devCodes: require('../utils/config').showDevCodes(),
   });
 }));
 

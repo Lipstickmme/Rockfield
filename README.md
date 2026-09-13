@@ -245,9 +245,15 @@ application, where the session lives.
 
 Alerts are written to the database first and sent second. Without
 `RESEND_API_KEY` they are stored, shown in the customer's notification centre,
-and marked "not sent" in the console — and one-time codes are returned in the
-API response and printed to the server log so local development is not locked
-out. Configured deployments never expose a code.
+and marked "not sent" in the console.
+
+One-time codes behave the same way, with a guard: on a laptop with no mail
+provider they come back in the API response so development can sign into
+itself, and the sign-in page offers the demonstration logins. On anything that
+looks deployed — `VERCEL`, `NODE_ENV=production` — both are off, because
+`/auth/forgot` takes an address from anybody and `/auth/reset` takes the code
+it returns. `BANK_SHOW_DEV_CODES=1` turns them back on deliberately for a
+public demonstration.
 
 ---
 
@@ -263,6 +269,7 @@ out. Configured deployments never expose a code.
 | `BANK_RATE_LIMIT_MAX` | Requests per minute per IP against `/api/bank` (300) |
 | `BANK_LOGIN_RATE_LIMIT` | Sign-in attempts per five minutes (20) |
 | `BANK_COOKIE_INSECURE` | `1` when serving over plain HTTP locally |
+| `BANK_SHOW_DEV_CODES` | `1` exposes one-time codes and the demo logins on a deployment |
 | `SUPABASE_*`, `RESEND_*`, `FORM_*` | As in `.env.example` |
 
 Anything an operator should be able to change without a deploy — limits, fees,

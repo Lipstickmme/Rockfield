@@ -249,7 +249,7 @@ async function issueTransferOtp(user, transfer) {
     rows: receiptRows(transfer),
     footNote: 'If you did not start this transfer, do not enter the code - call us on ' + BANK.fraudPhone + '.',
   });
-  const exposeCode = !process.env.RESEND_API_KEY;
+  const exposeCode = require('../utils/config').showDevCodes();
   if (exposeCode) {
     console.log(`[rockfield] transfer OTP for ${user.email}: ${code} (email is not configured)`);
   }

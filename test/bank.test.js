@@ -437,6 +437,29 @@ const dollars = (cents) => (cents / 100).toFixed(2);
       ok('sign-out clears the session');
     }
 
+    /* ---- 21. a deployment never hands a one-time code back ---- */
+    {
+      const api = client(base);
+      const onLaptop = await api.post('/api/bank/auth/forgot', { email: 'demo@rockfieldbank.com' });
+      assert.ok(onLaptop.body.devCode, 'without mail configured, local development can still sign in');
+
+      // The same request from something that looks deployed must not answer
+      // with the code: /auth/forgot takes an address from anybody, and
+      // /auth/reset takes that code, so together they would be a takeover.
+      process.env.VERCEL = '1';
+      const deployed = await api.post('/api/bank/auth/forgot', { email: 'demo@rockfieldbank.com' });
+      delete process.env.VERCEL;
+      assert.strictEqual(deployed.status, 200, 'the endpoint still answers the same way');
+      assert.strictEqual(deployed.body.devCode, undefined, 'but the code is withheld');
+      assert.strictEqual(deployed.body.status, 'sent', 'and it says nothing about whether the address exists');
+
+      const config = require(ROOT + '/src/utils/config');
+      process.env.RESEND_API_KEY = 'test-key';
+      assert.strictEqual(config.showDevCodes(), false, 'configured mail withholds them too');
+      delete process.env.RESEND_API_KEY;
+      ok('one-time codes are returned to a laptop and withheld from a deployment');
+    }
+
     console.log('\n  all banking tests passed');
   } catch (err) {
     failures += 1;
