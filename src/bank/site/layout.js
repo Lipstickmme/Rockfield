@@ -10,8 +10,21 @@
  */
 
 const { BANK, PRODUCTS } = require('../constants');
+const logo = require('./logo');
 
 const YEAR = new Date().getFullYear();
+
+/**
+ * Absolute URL for the link card. Scrapers do not resolve a relative path
+ * against the page they fetched, so `/assets/...` shows up blank everywhere.
+ * PUBLIC_BASE_URL is the domain when it is set; a Vercel deployment otherwise
+ * knows its own hostname.
+ */
+function socialImage() {
+  const base = process.env.PUBLIC_BASE_URL
+    || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://rockfieldbank.com');
+  return `${base.replace(/\/+$/, '')}/assets/bank/og-image.png`;
+}
 
 /* ---------------------------------------------------------------- icons --- */
 
@@ -54,6 +67,17 @@ function head({ title, description, noindex = false, styles = [], bodyClass }) {
   <title>${title}</title>
   <meta name="description" content="${description}" />${noindex ? '\n  <meta name="robots" content="noindex, nofollow" />' : ''}
   <meta name="theme-color" content="#11213a" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="${BANK.name}" />
+  <meta property="og:title" content="${title}" />
+  <meta property="og:description" content="${description}" />
+  <meta property="og:image" content="${socialImage()}" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="${title}" />
+  <meta name="twitter:description" content="${description}" />
+  <meta name="twitter:image" content="${socialImage()}" />
   <link rel="icon" href="/favicon.ico" sizes="32x32" />
   <link rel="icon" href="/favicon.png" type="image/png" sizes="512x512" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -112,7 +136,7 @@ function sidebar(active) {
   return `
     <aside class="rf-side" id="rf-side">
       <div class="rf-side-brand">
-        <span class="rf-mark">R</span>
+        <span class="rf-mark">${logo.emblem({ height: 26, weight: 8 })}</span>
         <span>
           <strong>${BANK.shortName}</strong>
           <small>Online banking</small>
@@ -177,7 +201,7 @@ function authPage({ title, description, content, extraScripts = [] }) {
     `  <div class="rf-auth-wrap">
     <section class="rf-auth-aside">
       <a class="brandline" href="/" style="text-decoration:none;color:inherit">
-        <span class="rf-mark">R</span>
+        <span class="rf-mark">${logo.emblem({ height: 26, weight: 8 })}</span>
         <strong>${BANK.name}</strong>
       </a>
       <h2>Your money, held the way a bank should hold it.</h2>
@@ -211,8 +235,8 @@ function marketingNav(active = '') {
   return `
   <header class="rf-marketing-nav">
     <div class="wrap inner">
-      <a class="brandline" href="/">
-        <span class="rf-mark">R</span>
+      <a class="brandline" href="/" aria-label="${BANK.name} home">
+        <span class="rf-mark on-paper">${logo.emblem({ height: 34, weight: 7 })}</span>
         <span>
           <strong>${BANK.name}</strong>
           <small>Member FDIC</small>
@@ -241,7 +265,7 @@ function marketingFooter() {
       <div class="cols">
         <div>
           <div class="brandline" style="display:flex;gap:10px;align-items:center;margin-bottom:12px">
-            <span class="rf-mark">R</span>
+            <span class="rf-mark">${logo.emblem({ height: 26, weight: 8 })}</span>
             <strong style="color:#fff;font-family:var(--rf-display);font-size:16px">${BANK.name}</strong>
           </div>
           <p style="margin:0 0 12px;max-width:34ch">${BANK.tagline} Personal and business banking since ${BANK.established}.</p>

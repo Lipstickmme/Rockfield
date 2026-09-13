@@ -278,12 +278,29 @@ timeout — lives in the console under Settings instead.
 
 ---
 
-## Images
+## Images and the mark
 
 Page artwork resolves at build time from `public/assets/bank/`. Drop in
 `rockfield1` … `rockfield6` in any common format and the next build picks them
 up in place of the generated placeholders; the build log says which were found.
 Per-story images are named in `src/data/projects.json`.
+
+The logo lives once, as geometry, in `src/bank/site/logo.js` — a boulder with a
+banking hall in front of it, stroked in `currentColor` so the same shapes serve
+a navy sidebar and a white nav without a second file. `npm run build:brand`
+writes everything derived from it:
+
+| Output | Built from |
+|---|---|
+| `assets/bank/mark-{dark,light}.svg` | the line work alone |
+| `assets/bank/wordmark-{dark,light}.svg` | mark over ROCKFIELD / BANK |
+| `favicon.ico` (16, 32, 48) | a filled reduction — at 16px, the hall alone |
+| `favicon.png`, `apple-touch-icon.png` | the line work on a navy tile |
+| `assets/bank/og-image.png` | the link card, 1200×630 |
+
+It needs `playwright-core` to rasterise, and it is not part of `npm run build` —
+the outputs are committed, because they change about as often as the bank
+changes its name. Edit the geometry, run it again, and every size follows.
 
 ---
 

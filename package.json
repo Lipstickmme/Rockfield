@@ -8,6 +8,7 @@
     "start": "node server.js",
     "dev": "node scripts/build-pages.js && node --watch server.js",
     "build": "node scripts/build-pages.js",
+    "build:brand": "node scripts/build-brand.js",
     "prestart": "node scripts/build-pages.js",
     "seed": "node scripts/seed-bank.js",
     "check:vercel": "node scripts/check-vercel-upload.js",
