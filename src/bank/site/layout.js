@@ -31,56 +31,128 @@ function socialImage() {
  * The icon set.
  *
  * Drawn to sit with the logo and the serif rather than against them: flat-cut
- * ends and mitred corners instead of rounded ones, symmetrical about their own
- * axis, and built out of the same vocabulary the mark uses - a pediment, a
- * stylobate, a ruled line. The effect wanted is engraved, like the artwork on
- * a share certificate, not the rounded geometric set that ships with every
- * dashboard.
+ * ends and mitred corners, symmetrical about their own axis, and built from
+ * the same vocabulary the mark uses - a pediment, a stylobate, a ruled line.
+ * Engraved, like the artwork on a share certificate, rather than the rounded
+ * geometric set that ships with every dashboard.
+ *
+ * Each icon is two layers. `body` is the structure, stroked at full weight;
+ * `fine` is the detail - the flutes on a column, the wards of a key, the marks
+ * on a dial - stroked lighter and, below about 18px, dropped entirely, because
+ * a hairline at that size is a smudge that only makes the icon muddier. That
+ * split is what gives them their density at the sizes where density reads, and
+ * keeps them legible at the sizes where it does not.
  *
  * All on a 24 x 24 grid, and all stroked - none of them are filled, so one
  * definition serves a navy sidebar and a white page.
  */
 const ICONS = {
-  // A portico on four columns. The dashboard of a bank should look like one.
-  home: '<path d="M2.8 9.6 12 4l9.2 5.6"/><path d="M5.2 9.6v8.2M9.7 9.6v8.2M14.3 9.6v8.2M18.8 9.6v8.2"/><path d="M3.6 17.8h16.8"/><path d="M2.4 20.4h19.2"/>',
-  // A bound ledger, seen from the spine side.
-  accounts: '<path d="M4.5 4.5h13a2.5 2.5 0 0 1 2.5 2.5v12.5H7a2.5 2.5 0 0 1-2.5-2.5z"/><path d="M4.5 17A2.5 2.5 0 0 1 7 14.5h13"/><path d="M8.5 8.5h7"/>',
-  // A ruled line with the figures moving across it.
-  activity: '<path d="M2.5 20.5h19"/><path d="M3.5 14.5 8 10l3.5 3.5L16.5 7l4 4"/>',
-  transfer: '<path d="M3.5 9h14"/><path d="M13.8 5.2 17.6 9l-3.8 3.8"/><path d="M20.5 15h-14"/><path d="M10.2 11.2 6.4 15l3.8 3.8"/>',
-  people: '<circle cx="9" cy="7.6" r="3.3"/><path d="M3.2 19.8a5.8 5.8 0 0 1 11.6 0"/><path d="M16.2 5.1a3.3 3.3 0 0 1 0 6.2"/><path d="M17 14a5.8 5.8 0 0 1 3.8 5.5"/>',
+  // A portico. The dashboard of a bank should look like one.
+  home: {
+    body: '<path d="M2.4 9.8 12 4.1l9.6 5.7"/><path d="M4.3 9.8v8.4M9.4 9.8v8.4M14.6 9.8v8.4M19.7 9.8v8.4"/><path d="M3.1 18.2h17.8"/><path d="M1.8 20.6h20.4"/>',
+    fine: '<path d="M6.85 11v6M12 11v6M17.15 11v6"/><path d="M4.3 9.8h15.4"/>',
+  },
+  // A bound ledger, seen from the spine.
+  accounts: {
+    body: '<path d="M4.4 4.6h12.9a2.7 2.7 0 0 1 2.7 2.7v12.1H7.1a2.7 2.7 0 0 1-2.7-2.7z"/><path d="M4.4 16.7A2.7 2.7 0 0 1 7.1 14h12.9"/>',
+    fine: '<path d="M8.2 8h8M8.2 11h5.4"/>',
+  },
+  // Figures moving across a ruled line.
+  activity: {
+    body: '<path d="M2.4 20.6h19.2"/><path d="M3.4 14.6 8 10l3.6 3.6L16.6 7l4 4"/>',
+    fine: '<path d="M3.4 17.8h17.2"/>',
+  },
+  transfer: {
+    body: '<path d="M3.4 8.8h14.2"/><path d="M13.9 5.1 17.6 8.8l-3.7 3.7"/><path d="M20.6 15.2H6.4"/><path d="M10.1 11.5 6.4 15.2l3.7 3.7"/>',
+    fine: '',
+  },
+  people: {
+    body: '<circle cx="9" cy="7.6" r="3.4"/><path d="M3 19.9a6 6 0 0 1 12 0"/><path d="M16.1 4.9a3.4 3.4 0 0 1 0 6.4"/><path d="M17 13.8a6 6 0 0 1 4 5.6"/>',
+    fine: '',
+  },
   // A bill with a torn foot.
-  bill: '<path d="M6 3h12v18l-2.4-1.6L13.2 21l-2.4-1.6L8.4 21 6 19.4z"/><path d="M9 8h6M9 11.5h6M9 15h3.5"/>',
-  deposit: '<path d="M12 3.5V14"/><path d="M7.6 9.6 12 14l4.4-4.4"/><path d="M3.5 16.8v3.7h17v-3.7"/>',
-  card: '<path d="M2.5 5h19v14h-19z"/><path d="M2.5 9.6h19"/><path d="M5.6 12.6h4.2v3.2H5.6z"/>',
-  statement: '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9 11.5h6M9 15h6M9 18.5h3.5"/>',
-  bell: '<path d="M4.9 18.4c1.6-1.6 2.3-3.2 2.3-5.6v-1.9a4.8 4.8 0 0 1 9.6 0v1.9c0 2.4.7 4 2.3 5.6z"/><path d="M9.8 21.2h4.4"/><path d="M12 4.2V2.6"/>',
-  mail: '<path d="M2.5 5h19v14h-19z"/><path d="m2.5 5.9 9.5 6.6 9.5-6.6"/>',
+  bill: {
+    body: '<path d="M5.8 3h12.4v18l-2.5-1.7-2.5 1.7-2.6-1.7-2.4 1.7-2.4-1.6z"/>',
+    fine: '<path d="M8.6 7.6h6.8M8.6 11h6.8M8.6 14.4h3.9"/>',
+  },
+  deposit: {
+    body: '<path d="M12 3.2V14"/><path d="M7.5 9.5 12 14l4.5-4.5"/><path d="M3.3 16.6v4h17.4v-4"/>',
+    fine: '<path d="M8.4 18.6h7.2"/>',
+  },
+  card: {
+    body: '<path d="M2.4 4.8h19.2v14.4H2.4z"/><path d="M2.4 9.4h19.2"/>',
+    fine: '<path d="M5.4 12.6h4.4v3.2H5.4z"/><path d="M13.6 15.8h5.2"/><path d="M5.4 14.2h4.4"/>',
+  },
+  statement: {
+    body: '<path d="M5.8 3h8.4l4 4v14H5.8z"/><path d="M14.2 3v4h4"/>',
+    fine: '<path d="M8.6 11.4h6.6M8.6 14.6h6.6M8.6 17.8h3.8"/>',
+  },
+  bell: {
+    body: '<path d="M4.8 18.4c1.6-1.6 2.3-3.3 2.3-5.7v-1.8a4.9 4.9 0 0 1 9.8 0v1.8c0 2.4.7 4.1 2.3 5.7z"/><path d="M9.7 21.2h4.6"/>',
+    fine: '<path d="M12 4.1V2.5"/><path d="M9.4 11.4a2.6 2.6 0 0 1 2.6-2.6"/>',
+  },
+  mail: {
+    body: '<path d="M2.4 5h19.2v14H2.4z"/><path d="m2.4 5.9 9.6 6.7 9.6-6.7"/>',
+    fine: '<path d="m2.4 18.2 6.6-5.4M21.6 18.2 15 12.8"/>',
+  },
   // A heraldic shield: straight shoulders, a point at the foot.
-  shield: '<path d="M12 2.8 4.7 5.5v6.1c0 4.4 2.9 7.7 7.3 9.6 4.4-1.9 7.3-5.2 7.3-9.6V5.5z"/>',
-  user: '<circle cx="12" cy="7.8" r="3.6"/><path d="M4.8 20.6a7.2 7.2 0 0 1 14.4 0"/>',
-  console: '<path d="M2.5 4h19v16h-19z"/><path d="M2.5 8.6h19M9 8.6V20"/>',
-  logout: '<path d="M10.5 4.5H5v15h5.5"/><path d="m15.4 8 4 4-4 4"/><path d="M19.4 12H9.6"/>',
-  check: '<path d="m4.6 12.2 4.8 4.8L19.4 6.8"/>',
-  // A padlock with a keyhole, which is the part that says "locked".
-  lock: '<path d="M4 10h16v11H4z"/><path d="M7.8 10V7.2a4.2 4.2 0 0 1 8.4 0V10"/><circle cx="12" cy="14.6" r="1.4"/><path d="M12 16v2.4"/>',
-  // Hands, and the four quarter marks of a dial.
-  clock: '<circle cx="12" cy="12" r="8.8"/><path d="M12 6.6V12l3.9 2.3"/><path d="M12 3.2v1.5M20.8 12h-1.5M12 20.8v-1.5M3.2 12h1.5"/>',
-  search: '<circle cx="10.8" cy="10.8" r="6.8"/><path d="m15.7 15.7 5 5"/>',
-  chart: '<path d="M2.5 20.5h19"/><path d="M5.8 20.5V12M10.5 20.5V5.6M15.2 20.5v-6M19.9 20.5V9.2"/>',
-  plus: '<path d="M12 4.6v14.8M4.6 12h14.8"/>',
-  building: '<path d="M3.4 20.5V6.2L12 3.5v17"/><path d="M12 9.6h8.6v10.9"/><path d="M2 20.5h20"/><path d="M6.6 8.8v1.7M6.6 13.1v1.7M6.6 17.4v1.7M15.8 13.1v1.7M15.8 17.4v1.7"/>',
+  shield: {
+    body: '<path d="M12 2.7 4.6 5.4v6.2c0 4.5 3 7.8 7.4 9.7 4.4-1.9 7.4-5.2 7.4-9.7V5.4z"/>',
+    fine: '<path d="M12 5.6v12.2"/><path d="M6.9 6.4v5.2c0 3 1.9 5.4 5.1 7"/>',
+  },
+  user: {
+    body: '<circle cx="12" cy="7.7" r="3.7"/><path d="M4.6 20.7a7.4 7.4 0 0 1 14.8 0"/>',
+    fine: '',
+  },
+  console: {
+    body: '<path d="M2.4 3.8h19.2v16.4H2.4z"/><path d="M2.4 8.4h19.2M8.8 8.4v11.8"/>',
+    fine: '<path d="M11.4 11.4h7.4M11.4 14.2h7.4M11.4 17h4.4"/><path d="M5 5.7h1.4"/>',
+  },
+  logout: {
+    body: '<path d="M10.4 4.4H4.8v15.2h5.6"/><path d="m15.4 7.9 4.1 4.1-4.1 4.1"/><path d="M19.5 12H9.4"/>',
+    fine: '',
+  },
+  check: { body: '<path d="m4.4 12.3 4.9 4.9L19.6 6.7"/>', fine: '' },
+  // A padlock, with the keyhole that says "locked".
+  lock: {
+    body: '<path d="M3.8 9.8h16.4v11.4H3.8z"/><path d="M7.6 9.8V7.1a4.4 4.4 0 0 1 8.8 0v2.7"/>',
+    fine: '<circle cx="12" cy="14.4" r="1.5"/><path d="M12 15.9v2.6"/>',
+  },
+  clock: {
+    body: '<circle cx="12" cy="12" r="9"/><path d="M12 6.3V12l4 2.4"/>',
+    fine: '<path d="M12 3v1.6M21 12h-1.6M12 21v-1.6M3 12h1.6"/><path d="m17.7 6.3-1.1 1.1M17.7 17.7l-1.1-1.1M6.3 17.7l1.1-1.1M6.3 6.3l1.1 1.1"/>',
+  },
+  search: {
+    body: '<circle cx="10.7" cy="10.7" r="6.9"/><path d="m15.6 15.6 5 5"/>',
+    fine: '<path d="M7.6 10.7a3.1 3.1 0 0 1 3.1-3.1"/>',
+  },
+  chart: {
+    body: '<path d="M2.4 20.6h19.2"/><path d="M5.6 20.6V11.8M10.5 20.6V5.4M15.4 20.6v-6.2M20.3 20.6V9"/>',
+    fine: '<path d="M2.4 16.2h19.2M2.4 11.8h19.2"/>',
+  },
+  plus: { body: '<path d="M12 4.4v15.2M4.4 12h15.2"/>', fine: '' },
+  building: {
+    body: '<path d="M3.2 20.6V6.1L12 3.3v17.3"/><path d="M12 9.4h8.8v11.2"/><path d="M1.8 20.6h20.4"/>',
+    fine: '<path d="M6.3 8.3v1.8M6.3 12.7v1.8M6.3 17.1v1.8M9 7.4v1.8M9 11.8v1.8M9 16.2v1.8M15.6 12.4v1.8M15.6 16.8v1.8M18.2 12.4v1.8M18.2 16.8v1.8"/>',
+  },
 };
 
 /**
  * One icon, inline.
  *
- * Butt caps and mitred joins are the whole difference between this set and a
- * rounded one: a flat-cut end and a sharp corner read as engraved, which is
- * what sits with the serif.
+ * Butt caps and mitred joins are the difference between this set and a rounded
+ * one: a flat-cut end and a sharp corner read as engraved, which is what sits
+ * with the serif.
+ *
+ * The fine layer is dropped below 18px. It is drawn at 60% of the body weight,
+ * and 60% of a hairline at 15px is not a line - it is a grey blur that fills
+ * the icon in and makes it harder to read, not richer.
  */
-const icon = (name, size = 18) =>
-  `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="6" aria-hidden="true">${ICONS[name] || ''}</svg>`;
+const icon = (name, size = 18) => {
+  const art = ICONS[name] || { body: '', fine: '' };
+  const detail = size >= 18 && art.fine;
+  return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="6" aria-hidden="true"><g stroke-width="1.6">${art.body}</g>${detail ? `<g stroke-width="0.95" opacity=".72">${art.fine}</g>` : ''}</svg>`;
+};
 
 /* ----------------------------------------------------------------- head --- */
 
@@ -254,7 +326,7 @@ ${content}
 
 function marketingNav(active = '') {
   const link = (href, label, key) =>
-    `<a href="${href}"${key === active ? ' style="background:var(--rf-surface-3)"' : ''}>${label}</a>`;
+    `<a href="${href}"${key === active ? ' class="is-active" aria-current="page"' : ''}>${label}</a>`;
   return `
   <header class="rf-marketing-nav">
     <div class="wrap inner">

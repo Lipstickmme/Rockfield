@@ -756,10 +756,10 @@ body.rf-site {
 }
 
 .rf-hero .wrap { position: relative; z-index: 1; }
-.rf-hero-copy { max-width: 42rem; }
-.rf-hero h1 { font-family: var(--rf-headline); font-weight: 600; font-size: clamp(40px, 6.4vw, 74px); line-height: 1.06; letter-spacing: 0; margin: 0 0 18px; color: #fff; }
-.rf-hero p.lede { font-size: clamp(16px, 1.6vw, 19px); color: #d3dcea; max-width: 56ch; margin: 0 0 28px; }
-.rf-eyebrow { display: inline-flex; align-items: center; gap: 8px; font-size: 11.5px; letter-spacing: .18em; text-transform: uppercase; color: var(--rf-brass-2); font-weight: 600; margin-bottom: 16px; }
+.rf-hero-copy { max-width: 46rem; }
+.rf-hero h1 { font-family: var(--rf-headline); font-weight: 600; font-size: clamp(46px, 7.4vw, 88px); line-height: 1.04; letter-spacing: 0; margin: 0 0 22px; color: #fff; }
+.rf-hero p.lede { font-size: clamp(17px, 1.8vw, 21px); line-height: 1.55; color: #d8e0ec; max-width: 52ch; margin: 0 0 32px; }
+.rf-eyebrow { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; letter-spacing: .2em; text-transform: uppercase; color: var(--rf-brass-2); font-weight: 600; margin-bottom: 18px; }
 .rf-hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
 
 /* The figures, on glass. Sitting them on a frosted panel over the photograph
@@ -841,8 +841,32 @@ body.rf-site {
 .rf-marketing-nav .brandline strong { font-family: var(--rf-display); font-size: 15px; letter-spacing: .01em; }
 .rf-marketing-nav .brandline small { display: block; font-size: 9px; letter-spacing: .16em; text-transform: uppercase; color: var(--rf-ink-3); }
 .rf-marketing-nav nav { display: flex; gap: 4px; margin-left: 14px; }
-.rf-marketing-nav nav a { padding: 8px 12px; border-radius: 999px; text-decoration: none; font-size: 14px; font-weight: 500; color: var(--rf-ink-2); }
-.rf-marketing-nav nav a:hover { background: var(--rf-surface-3); }
+/* Nav items are marked by a rule beneath them rather than a filled pill.
+
+   The pill was painted with --rf-surface-3, which is a dark token in the dark
+   theme - and since this bar keeps its white ground in both themes, the
+   selected item came out as near-black text on a near-black pill. Colours here
+   are therefore fixed rather than themed: the bar is always white, so its
+   contents are always dark on white. */
+.rf-marketing-nav nav a {
+  position: relative;
+  padding: 9px 2px 8px; margin: 0 11px;
+  text-decoration: none; font-size: 14.5px; font-weight: 500;
+  color: #3d4757;
+  transition: color .16s var(--rf-ease);
+}
+.rf-marketing-nav nav a::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
+  background: var(--rf-brass); transform: scaleX(0); transform-origin: center;
+  transition: transform .2s var(--rf-ease);
+}
+.rf-marketing-nav nav a:hover { color: #101725; }
+.rf-marketing-nav nav a:hover::after { transform: scaleX(1); }
+.rf-marketing-nav nav a.is-active { color: #101725; font-weight: 600; }
+.rf-marketing-nav nav a.is-active::after { transform: scaleX(1); }
+@media (prefers-reduced-motion: reduce) {
+  .rf-marketing-nav nav a::after { transition: none; }
+}
 .rf-marketing-nav .spacer { margin-left: auto; }
 .rf-marketing-nav .actions { display: flex; gap: 9px; align-items: center; }
 
@@ -986,9 +1010,7 @@ body.rf-site {
      an accident. */
   :root:not([data-rf-theme="light"]) .rf-marketing-nav { background: #fff; border-bottom-color: #dfe6f0; }
   :root:not([data-rf-theme="light"]) .rf-marketing-nav .brandline strong { color: #101725; }
-  :root:not([data-rf-theme="light"]) .rf-marketing-nav .brandline small,
-  :root:not([data-rf-theme="light"]) .rf-marketing-nav nav a { color: #3d4757; }
-  :root:not([data-rf-theme="light"]) .rf-marketing-nav nav a:hover { background: #eef2f8; }
+  :root:not([data-rf-theme="light"]) .rf-marketing-nav .brandline small { color: #3d4757; }
   :root:not([data-rf-theme="light"]) .rf-marketing-nav .rf-btn.ghost {
     --btn-face: #fff; --btn-edge: #dfe6f0; --btn-ink: #101725;
   }

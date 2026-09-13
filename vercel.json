@@ -7,24 +7,24 @@
   "trailingSlash": false,
   "rewrites": [
     {
-      "source": "/personal",
-      "destination": "/services.html"
+      "source": "/services",
+      "destination": "/personal"
     },
     {
-      "source": "/business",
-      "destination": "/projects.html"
+      "source": "/projects",
+      "destination": "/business"
     },
     {
-      "source": "/support",
-      "destination": "/contact.html"
+      "source": "/contact",
+      "destination": "/support"
     },
     {
       "source": "/login",
-      "destination": "/signin.html"
+      "destination": "/signin"
     },
     {
       "source": "/desk",
-      "destination": "/admin.html"
+      "destination": "/admin"
     }
   ],
   "headers": [

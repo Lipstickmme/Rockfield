@@ -83,19 +83,23 @@ const sendPage = (file) => (req, res) => res.sendFile(path.join(publicDir, file)
 
 // The public bank site.
 app.get('/', sendPage('index.html'));
-app.get('/personal', sendPage('services.html'));
-app.get('/business', sendPage('projects.html'));
-// The file names the products and stories pages were built under before the
-// site became a bank. Kept so existing links and bookmarks still land.
-app.get('/services', sendPage('services.html'));
-app.get('/projects', sendPage('projects.html'));
+// Each page is built under the name its URL uses, so a static host serves it
+// without a rewrite. Vercel's cleanUrls turns a rewrite whose destination ends
+// in .html into a redirect, which is what took /personal, /business and
+// /support off the deployment while they worked perfectly well locally.
+app.get('/personal', sendPage('personal.html'));
+app.get('/business', sendPage('business.html'));
+// The names these pages had before the site became a bank. Kept so existing
+// links and bookmarks still land.
+app.get('/services', sendPage('personal.html'));
+app.get('/projects', sendPage('business.html'));
 app.get('/rates', sendPage('rates.html'));
 app.get('/security-center', sendPage('security-center.html'));
 app.get('/open-account', sendPage('open-account.html'));
 app.get('/careers', sendPage('careers.html'));
 app.get('/apply', sendPage('apply.html'));
-app.get('/contact', sendPage('contact.html'));
-app.get('/support', sendPage('contact.html'));
+app.get('/support', sendPage('support.html'));
+app.get('/contact', sendPage('support.html'));
 app.get('/legal', sendPage('legal.html'));
 
 // Sign-in and the rest of the front door.

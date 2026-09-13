@@ -105,7 +105,7 @@ const IGNORE = /fonts\.googleapis|fonts\.gstatic|ERR_CONNECTION_RESET|ERR_NAME_N
     {
       const context = await browser.newContext();
       const page = await newPage(context, 'public');
-      for (const route of ['/', '/personal', '/business', '/rates', '/security-center', '/contact', '/careers', '/legal']) {
+      for (const route of ['/', '/personal', '/business', '/rates', '/security-center', '/support', '/contact', '/careers', '/legal', '/services', '/projects', '/open-account', '/apply']) {
         await page.goto(base + route, { waitUntil: 'domcontentloaded' });
         const heading = await page.textContent('h1');
         assert.ok(heading && heading.trim().length, `${route} has a heading`);

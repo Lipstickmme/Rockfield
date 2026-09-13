@@ -262,7 +262,8 @@ public demonstration.
 | Variable | What it does |
 |---|---|
 | `BANK_ENCRYPTION_KEY` | **Set this.** AES-256-GCM key for SSNs, ID and card numbers |
-| `BANK_ADMIN_EMAIL` / `BANK_ADMIN_PASSWORD` | The first administrator |
+| `BANK_ADMIN_EMAIL` / `BANK_ADMIN_PASSWORD` | The administrator's sign-in, applied on every boot |
+| `BANK_ADMIN_RESET` | `1` resets that password on the next boot, for when it is lost |
 | `BANK_DEMO_EMAIL` / `BANK_DEMO_PASSWORD` | The seeded demonstration customer |
 | `BANK_ALERT_FROM` | Sender for alert emails |
 | `PUBLIC_BASE_URL` | Absolute base for links inside emails |

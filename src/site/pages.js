@@ -100,7 +100,7 @@ const homeContent = `
     <img class="rf-hero-photo" src="${images.hero}" alt="" aria-hidden="true" fetchpriority="high" />
     <div class="wrap">
       <div class="rf-hero-copy">
-        <span class="rf-eyebrow">${icon('shield', 15)} Member FDIC &middot; Established ${BANK.established}</span>
+        <span class="rf-eyebrow">Established ${BANK.established}</span>
         <h1>Banking built<br />on bedrock.</h1>
         <p class="lede">Checking with no monthly fee. Savings at 4.35% APY. And a payments team that reads every outgoing wire before it leaves.</p>
         <div class="rf-hero-actions">
@@ -715,12 +715,12 @@ module.exports = [
     description: 'Personal and business banking from Rockfield National Bank: no-fee checking, 4.35% APY savings, cards, wires and a 24/7 fraud line. Member FDIC.',
     active: '', content: homeContent,
   }),
-  marketing('services.html', {
+  marketing('personal.html', {
     title: `Personal banking | ${BANK.name}`,
     description: 'Checking, savings, certificates and cards from Rockfield National Bank.',
     active: 'personal', content: personalContent,
   }),
-  marketing('projects.html', {
+  marketing('business.html', {
     title: `Business banking | ${BANK.name}`,
     description: 'Operating accounts, payroll, merchant settlement and credit for businesses.',
     active: 'business', content: businessContent,
@@ -750,7 +750,7 @@ module.exports = [
     description: 'Apply to Rockfield National Bank. One form, read by the people you would work with.',
     active: '', content: applyContent, extraScripts: ['/js/apply.js'],
   }),
-  marketing('contact.html', {
+  marketing('support.html', {
     title: `Support | ${BANK.name}`,
     description: 'Contact Rockfield National Bank. Client services six days a week and a 24/7 fraud line.',
     active: 'support', content: contactContent,

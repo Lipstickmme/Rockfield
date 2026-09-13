@@ -423,7 +423,8 @@ notifications, so you can work entirely offline. To test notifications locally, 
 | `RATE_LIMIT_WINDOW_MS` / `RATE_LIMIT_MAX` | no | API rate limiting (default 60000 / 30) |
 | `PORT` | no | Local port (default 3000) |
 | `BANK_ENCRYPTION_KEY` | **for the bank** | AES-256-GCM key for SSNs, ID numbers and card numbers. 64 hex characters. Set before the first customer |
-| `BANK_ADMIN_EMAIL` / `BANK_ADMIN_PASSWORD` | for the bank | The first administrator, created when the database is empty |
+| `BANK_ADMIN_EMAIL` / `BANK_ADMIN_PASSWORD` | for the bank | The administrator's sign-in. Applied on every boot, not only the first |
+| `BANK_ADMIN_RESET` | no | `1` resets the administrator's password to `BANK_ADMIN_PASSWORD` on the next boot. Unset it afterwards |
 | `BANK_DEMO_EMAIL` / `BANK_DEMO_PASSWORD` | no | The seeded demonstration customer |
 | `BANK_ALERT_FROM` | for email | Sender for banking alerts (falls back to `FORM_FROM`) |
 | `PUBLIC_BASE_URL` | for email | Absolute base for the links inside alert emails |
@@ -437,6 +438,47 @@ Legacy aliases `CONTACT_NOTIFY_EMAIL` and `NOTIFY_FROM` still work if `FORM_TO` 
 ---
 
 ## Troubleshooting
+
+**I set `BANK_ADMIN_EMAIL` and `BANK_ADMIN_PASSWORD`, and cannot sign in.**
+Almost always because they were added *after* the first deploy. The bank seeds
+itself on its first request, and only while it has no accounts at all - it
+writes six months of history and must never do that twice - so a deployment
+that answered one request before the variables existed already had an
+administrator on the built-in address.
+
+This now repairs itself: on every boot the bank reconciles the administrator
+against the environment, and moves the seeded account to your address and
+password as long as nobody has signed into it yet. **Redeploy and try again.**
+
+If that does not do it, `/api/health` says what the server can actually see:
+
+```json
+"bank": {
+  "adminEmailFromEnv": true,
+  "adminPasswordFromEnv": true,
+  "encryptionKeySet": true,
+  "users": 4
+}
+```
+
+- `adminEmailFromEnv: false` - the variable is not in the **Production**
+  environment, or there has been no redeploy since it was added.
+- `users: 0` - nothing is seeded yet. The first request to the site does it.
+- `users: null` - the bank's tables are missing. Run
+  [`supabase/migrations/0003_bank.sql`](../supabase/migrations/0003_bank.sql).
+- Both `true` and you still cannot sign in - somebody has already signed into
+  that account, so its password is left alone deliberately. Set
+  `BANK_ADMIN_RESET=1`, redeploy, sign in, then remove the variable.
+
+Two things that are not the cause, but get blamed: the sign-in page no longer
+lists demonstration logins on a deployment, by design; and a wrong password
+returns the same message as an unknown address, also by design.
+
+**The bank forgets everything between visits, and the demonstration data keeps
+coming back.** No database is connected, so the bank is writing to the
+container's filesystem, which a serverless deployment throws away. `/api/health`
+reports `"storage": "filesystem"` when this is the case. Do Step 4.
+
 
 **Chat history disappears on reload in production.** No database is connected. Recheck
 Step 4, that the variables exist in the **Production** environment, and that you

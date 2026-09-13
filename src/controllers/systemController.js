@@ -91,6 +91,15 @@ exports.publicConfig = (req, res) => {
  * Values are never returned, only whether they are set, plus warnings for
  * combinations that are configured but wrong.
  */
+/** How many accounts the bank has, or null if it cannot say. */
+async function countUsers() {
+  try {
+    return await require('../bank/db').db.users.count();
+  } catch (err) {
+    return null;
+  }
+}
+
 exports.health = async (req, res) => {
   const url = config.supabaseUrl();
   const anon = config.supabaseAnonKey();
@@ -129,6 +138,21 @@ exports.health = async (req, res) => {
       'MAILBOX_ADDRESS is set but RESEND_WEBHOOK_SECRET is not. The inbound endpoint refuses every request rather than trusting unsigned posts.'
     );
   }
+  // The bank's own bootstrap. Whether the administrator's credentials come
+  // from the environment is the single most common thing to get wrong on a
+  // deployment, and it is invisible from the sign-in page, which says only
+  // that the details do not match.
+  const adminEmail = String(process.env.BANK_ADMIN_EMAIL || '').trim();
+  const adminPassword = process.env.BANK_ADMIN_PASSWORD || '';
+  if (adminEmail && !adminPassword) {
+    warnings.push('BANK_ADMIN_EMAIL is set but BANK_ADMIN_PASSWORD is not, so the administrator keeps the built-in password.');
+  }
+  if (adminPassword && !adminEmail) {
+    warnings.push('BANK_ADMIN_PASSWORD is set but BANK_ADMIN_EMAIL is not, so it is not applied to any account.');
+  }
+  if (!process.env.BANK_ENCRYPTION_KEY) {
+    warnings.push('BANK_ENCRYPTION_KEY is not set, so Social Security and card numbers are encrypted with a development key. Set a 32-byte key before anyone real uses this.');
+  }
   if (config.forwardWouldLoop()) {
     warnings.push(
       "FORWARD_TO is one of this site's own addresses. Forwarding would loop mail back into the inbound webhook until the sending quota is gone. Set it to a mailbox on another domain, or leave it unset."
@@ -163,6 +187,16 @@ exports.health = async (req, res) => {
       forwardTo: Boolean(forward),
     },
     storage: url && service ? 'supabase' : 'filesystem',
+    // Enough to tell a locked-out operator what the bank thinks its sign-in
+    // is, without saying what it is: the address is reported only as set or
+    // not, and no password or hash goes anywhere near this response.
+    bank: {
+      adminEmailFromEnv: Boolean(adminEmail),
+      adminPasswordFromEnv: Boolean(adminPassword),
+      adminPasswordResetRequested: /^(1|true|yes|on)$/i.test(String(process.env.BANK_ADMIN_RESET || '')),
+      encryptionKeySet: Boolean(process.env.BANK_ENCRYPTION_KEY),
+      users: await countUsers(),
+    },
     schema: req.query.probe ? schema || 'supabase not configured' : undefined,
     warnings,
   });

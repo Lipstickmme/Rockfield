@@ -535,6 +535,97 @@ async function ensureSeed(options = {}) {
   };
 }
 
+/* ------------------------------------------------------- admin bootstrap --- */
+
+/**
+ * Bring the administrator's sign-in into line with the environment.
+ *
+ * ensureSeed() only runs while the bank has no users at all, which is right -
+ * it writes six months of history and must never do that twice. But it means
+ * BANK_ADMIN_EMAIL and BANK_ADMIN_PASSWORD only ever take effect if they were
+ * set before the very first request. Set them afterwards, as anybody actually
+ * deploying will, and the administrator keeps whatever the defaults were and
+ * the new credentials do not work. That is a locked-out operator with no way
+ * back in short of emptying the database.
+ *
+ * So this runs on every boot, and reconciles:
+ *
+ *   - no account on that address, and the account we seeded has never been
+ *     signed into: move it to the address and password from the environment.
+ *     This is the "I set the variables after the first deploy" case.
+ *   - no account, and no untouched seeded administrator either: create one.
+ *   - the account exists: leave the password alone. Somebody is using it and
+ *     may have changed it deliberately. BANK_ADMIN_RESET=1 overrides that for
+ *     the case where it has been forgotten.
+ *
+ * Never touches a customer, and never weakens an account that is in use.
+ */
+async function reconcileAdmin() {
+  const email = String(process.env.BANK_ADMIN_EMAIL || '').trim().toLowerCase();
+  const password = process.env.BANK_ADMIN_PASSWORD || '';
+  if (!email && !password) return { changed: false, reason: 'not configured' };
+  if (!email || !password) {
+    console.warn('[rockfield] BANK_ADMIN_EMAIL and BANK_ADMIN_PASSWORD must both be set; ignoring.');
+    return { changed: false, reason: 'incomplete' };
+  }
+
+  const reset = /^(1|true|yes|on)$/i.test(String(process.env.BANK_ADMIN_RESET || ''));
+  const existing = await users.findByEmail(email);
+
+  if (existing) {
+    if (existing.role !== 'admin') {
+      console.warn(`[rockfield] BANK_ADMIN_EMAIL is a customer account; not changing it.`);
+      return { changed: false, reason: 'not an administrator' };
+    }
+    if (!reset) return { changed: false, reason: 'already exists' };
+    await db.users.update(existing.id, {
+      password_hash: await security.hashSecret(password),
+      status: 'active',
+      failed_logins: 0,
+      locked_until: null,
+      must_change_password: false,
+      updated_at: nowIso(),
+    });
+    console.log(`[rockfield] BANK_ADMIN_RESET: password reset for ${email}`);
+    return { changed: true, reason: 'password reset' };
+  }
+
+  // Nobody on that address. Move the seeded administrator over, but only if
+  // it has never been used - once somebody has signed in, that account is
+  // theirs and renaming it out from under them would be its own outage.
+  const admins = await db.users.find({ role: 'admin' });
+  const untouched = admins.find((a) => !a.last_login_at);
+  if (untouched) {
+    await db.users.update(untouched.id, {
+      email,
+      password_hash: await security.hashSecret(password),
+      status: 'active',
+      failed_logins: 0,
+      locked_until: null,
+      must_change_password: false,
+      updated_at: nowIso(),
+    });
+    console.log(`[rockfield] administrator moved to ${email} from the environment`);
+    return { changed: true, reason: 'adopted the seeded administrator' };
+  }
+
+  await users.createUser({
+    email,
+    password,
+    role: 'admin',
+    firstName: 'Bank',
+    lastName: 'Administrator',
+    status: 'active',
+    emailVerified: true,
+    mustChangePassword: false,
+    kycStatus: 'verified',
+    tier: 'Staff',
+    twoFactorEnabled: false,
+  });
+  console.log(`[rockfield] administrator ${email} created from the environment`);
+  return { changed: true, reason: 'created' };
+}
+
 /**
  * Seed once per process, on the first request that needs data. Several
  * requests arriving together share the same promise rather than racing to
@@ -543,13 +634,24 @@ async function ensureSeed(options = {}) {
 let seeding = null;
 function ensureSeedOnce() {
   if (!seeding) {
-    seeding = ensureSeed().catch((err) => {
-      seeding = null;
-      console.warn('[rockfield] seed failed:', err.message);
-      return { seeded: false, error: err.message };
-    });
+    seeding = ensureSeed()
+      .then(async (result) => {
+        // After seeding, not instead of it: a first boot with the variables
+        // already set seeds with them and this finds nothing to do.
+        try {
+          return { ...result, admin: await reconcileAdmin() };
+        } catch (err) {
+          console.warn('[rockfield] admin reconcile failed:', err.message);
+          return { ...result, admin: { changed: false, error: err.message } };
+        }
+      })
+      .catch((err) => {
+        seeding = null;
+        console.warn('[rockfield] seed failed:', err.message);
+        return { seeded: false, error: err.message };
+      });
   }
   return seeding;
 }
 
-module.exports = { ensureSeed, ensureSeedOnce, generateHistory, rng };
+module.exports = { ensureSeed, ensureSeedOnce, reconcileAdmin, generateHistory, rng };
