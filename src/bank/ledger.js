@@ -152,6 +152,113 @@ async function post(input) {
   });
 }
 
+/**
+ * Post many entries at once.
+ *
+ * Same arithmetic as post(), same row shape, same locking - but the round
+ * trips collapse. post() writes one transaction and one balance update per
+ * entry, which is two requests; six months of seeded history is about three
+ * hundred and forty entries, so seeding a hosted database meant roughly seven
+ * hundred sequential round trips. That takes half a minute or more, and a
+ * serverless function is killed after ten seconds, so the bank could never
+ * finish seeding itself on a deployment: the sign-in page then rejected every
+ * password, because there were no accounts behind it.
+ *
+ * Here the entries for an account are walked in date order under one lock, the
+ * running balance is carried in memory, and the result is one bulk insert of
+ * the transactions plus one update of the account.
+ *
+ * This is for writing history that is generated rather than transacted - the
+ * seeder. Anything a customer or a member of staff actually does goes through
+ * post(), one entry at a time, where each balance is read back from the store
+ * before it is changed.
+ */
+async function postMany(entries) {
+  if (!entries.length) return { transactions: [], accounts: [] };
+
+  const byAccount = new Map();
+  for (const entry of entries) {
+    if (!byAccount.has(entry.accountId)) byAccount.set(entry.accountId, []);
+    byAccount.get(entry.accountId).push(entry);
+  }
+
+  const transactions = [];
+  const accounts = [];
+
+  for (const [accountId, group] of byAccount) {
+    // eslint-disable-next-line no-await-in-loop
+    const result = await withLock(`account:${accountId}`, async () => {
+      const account = await db.accounts.findById(accountId);
+      if (!account) throw Object.assign(new Error('Account not found.'), { status: 404 });
+
+      let balance = Number(account.balance || 0);
+      let hold = Number(account.hold_amount || 0);
+      const rows = [];
+
+      // Date order, so every balance_after is the balance as at that entry.
+      const ordered = group.slice().sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+
+      for (const entry of ordered) {
+        const cents = Math.round(Number(entry.amount));
+        if (!Number.isFinite(cents) || cents <= 0) {
+          throw Object.assign(new Error('Amount must be a positive number.'), { status: 400 });
+        }
+        const status = entry.status || 'posted';
+        const delta = signFor(account.type, entry.direction) * cents;
+
+        if (status === 'posted') {
+          balance += delta;
+        } else if ((status === 'pending' || status === 'hold') && entry.direction === 'debit') {
+          hold += cents;
+        }
+
+        rows.push({
+          id: ids.uuid(),
+          created_at: nowIso(),
+          posted_at: status === 'posted' ? nowIso() : null,
+          date: entry.date || nowIso(),
+          user_id: account.user_id,
+          account_id: account.id,
+          direction: entry.direction,
+          amount: cents,
+          currency: account.currency || 'USD',
+          description: entry.description || TRANSACTION_METHODS[entry.method]?.label || 'Transaction',
+          merchant: entry.merchant || '',
+          category: entry.category || 'Other',
+          method: entry.method || 'adjustment',
+          status,
+          balance_after: status === 'posted' ? balance : null,
+          reference: entry.reference || ids.reference('TXN'),
+          trace_number: entry.traceNumber || null,
+          check_number: entry.checkNumber || null,
+          memo: entry.memo || '',
+          location: entry.location || '',
+          counterparty: entry.counterparty || null,
+          transfer_id: entry.transferId || null,
+          created_by: entry.createdBy || 'system',
+          created_by_id: entry.createdById || null,
+          admin_note: entry.adminNote || '',
+          meta: entry.meta || null,
+        });
+      }
+
+      await db.transactions.insertMany(rows);
+      const patch = {
+        balance,
+        hold_amount: hold,
+        available_balance: availableFor({ ...account, balance, hold_amount: hold }),
+        last_activity_at: nowIso(),
+      };
+      const updated = await db.accounts.update(account.id, patch);
+      return { rows, account: updated || { ...account, ...patch } };
+    });
+    transactions.push(...result.rows);
+    accounts.push(result.account);
+  }
+
+  return { transactions, accounts };
+}
+
 /** Turn a pending entry into a posted one, releasing its hold. */
 async function settle(transactionId, { status = 'posted', note } = {}) {
   const tx = await db.transactions.findById(transactionId);
@@ -365,6 +472,7 @@ function recentPeriods(count = 12, from = new Date()) {
 
 module.exports = {
   post,
+  postMany,
   settle,
   reverse,
   charge,

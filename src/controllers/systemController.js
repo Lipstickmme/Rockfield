@@ -41,6 +41,27 @@ const PROBES = [
     migration: '0002_email.sql',
     neededWhen: () => Boolean(config.mailboxAddress()),
   },
+  // From 0003_bank.sql. These were missing from this list entirely, which is
+  // how a bank that could not write a single row still reported a healthy
+  // schema: the probe was only ever asked about the website's tables.
+  ...[
+    ['bank_users', 'id,created_at,email,password_hash,role,status,failed_logins,locked_until,last_login_at,must_change_password'],
+    ['bank_accounts', 'id,created_at,user_id,type,account_number,routing_number,balance,hold_amount,available_balance,status'],
+    ['bank_transactions', 'id,created_at,date,user_id,account_id,direction,amount,status,balance_after,reference'],
+    ['bank_transfers', 'id,created_at,user_id,type,method,amount,status,trace_number'],
+    ['bank_beneficiaries', 'id,created_at,user_id,name,account_number,routing_number,status'],
+    ['bank_cards', 'id,created_at,user_id,account_id,last4,status,daily_purchase_limit,daily_atm_limit'],
+    ['bank_payees', 'id,created_at,user_id,name,account_number,amount,due_day'],
+    ['bank_deposits', 'id,created_at,user_id,account_id,amount,status'],
+    ['bank_documents', 'id,created_at,user_id,kind,filename,mime,data'],
+    ['bank_activity', 'id,created_at,user_id,actor_email,action,category,severity'],
+    ['bank_alerts', 'id,created_at,user_id,type,subject,status'],
+    ['bank_messages', 'id,created_at,thread_id,user_id,from_side,subject,body'],
+    ['bank_disputes', 'id,created_at,user_id,transaction_id,amount,status'],
+    ['bank_sessions', 'id,created_at,user_id,token_hash,csrf,expires_at'],
+    ['bank_otps', 'id,created_at,user_id,purpose,code_hash,expires_at'],
+    ['bank_settings', 'id,values,updated_at'],
+  ].map(([table, columns]) => ({ table, columns, migration: '0003_bank.sql' })),
 ];
 
 async function probeSchema() {
@@ -196,6 +217,10 @@ exports.health = async (req, res) => {
       adminPasswordResetRequested: /^(1|true|yes|on)$/i.test(String(process.env.BANK_ADMIN_RESET || '')),
       encryptionKeySet: Boolean(process.env.BANK_ENCRYPTION_KEY),
       users: await countUsers(),
+      // What happened the last time this process tried to seed. `attempted:
+      // false` with no accounts means nothing has asked the bank for data yet
+      // - the first visit to the sign-in page does it.
+      seed: require('../bank/seed').seedStatus(),
     },
     schema: req.query.probe ? schema || 'supabase not configured' : undefined,
     warnings,

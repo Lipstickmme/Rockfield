@@ -215,10 +215,43 @@ function createCollection(name) {
     });
   }
 
-  async function insertMany(records) {
-    const out = [];
-    for (const r of records) out.push(await insert(r));
-    return out;
+  /**
+   * Insert many rows in as few round trips as possible.
+   *
+   * This used to be a loop over insert(), which is one HTTPS request per row.
+   * The seed writes about seven hundred rows, so on a hosted database that was
+   * seven hundred sequential round trips - half a minute or more, against a
+   * serverless function that is killed after ten seconds. The bank could never
+   * finish seeding itself on a deployment, and the symptom was a sign-in page
+   * that rejected every password because there were no accounts behind it.
+   *
+   * PostgREST takes an array, so a chunk is one request. The chunk is bounded
+   * because these rows are wide - a transaction carries thirty columns - and a
+   * single multi-megabyte body is its own kind of timeout.
+   */
+  async function insertMany(records, { chunkSize = 250 } = {}) {
+    const rows = records.map((r) => ({ ...r }));
+    if (!rows.length) return rows;
+
+    const supabase = getSupabase();
+    if (supabase) {
+      try {
+        for (let i = 0; i < rows.length; i += chunkSize) {
+          await supabase.insert(table, rows.slice(i, i + chunkSize));
+        }
+        return rows;
+      } catch (err) {
+        if (!/does not exist|42P01|PGRST205/i.test(err.message)) throw err;
+      }
+    }
+
+    // One file write for the batch rather than one per row.
+    return chain(name, async () => {
+      const existing = await readFile(name);
+      existing.push(...rows);
+      await writeFile(name, existing);
+      return rows;
+    });
   }
 
   async function update(id, patch) {

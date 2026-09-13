@@ -11,14 +11,47 @@
 
 const http = require('http');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 
 const ANON_KEY = 'anon-key';
 const SERVICE_KEY = 'service-key';
 
 const uuid = () => crypto.randomUUID();
 
+/**
+ * The bank's tables, read out of the migration that creates them.
+ *
+ * Parsed rather than copied, so the mock cannot drift from the real schema -
+ * a hand-maintained list here would pass the probe test while the deployment
+ * was missing a column, which is precisely the failure the probe exists to
+ * catch.
+ */
+function bankTables() {
+  const sql = fs.readFileSync(
+    path.join(__dirname, '..', 'supabase', 'migrations', '0003_bank.sql'),
+    'utf8'
+  );
+  const tables = {};
+  const re = /create table if not exists public\.(bank_\w+)\s*\(([\s\S]*?)\n\);/g;
+  let match = re.exec(sql);
+  while (match) {
+    const [, table, body] = match;
+    const columns = body
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line && !line.startsWith('--') && !/^(constraint|primary key|unique|check|foreign key)\b/i.test(line))
+      .map((line) => line.split(/\s+/)[0])
+      .filter((name) => /^[a-z_][a-z0-9_]*$/.test(name));
+    tables[table] = { columns, rows: [] };
+    match = re.exec(sql);
+  }
+  return tables;
+}
+
 function schema() {
   return {
+    ...bankTables(),
     admins: { columns: ['user_id', 'email', 'created_at'], rows: [] },
     enquiries: {
       columns: ['id', 'created_at', 'name', 'email', 'company', 'service', 'message', 'ip', 'status', 'notes'],

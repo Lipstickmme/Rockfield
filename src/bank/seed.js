@@ -261,9 +261,11 @@ async function generateHistory({ user, checking, savings, card, cardAccountId, m
   }
 
   entries.sort((a, b) => (a.date < b.date ? -1 : 1));
-  for (const entry of entries) {
-    await ledger.post({ ...entry, status: 'posted', createdBy: 'system' });
-  }
+  // One bulk write per account rather than two round trips per entry. See
+  // ledger.postMany: this is the difference between the bank seeding itself in
+  // a couple of seconds and being killed by a serverless timeout part way
+  // through, which leaves a sign-in page with no accounts behind it.
+  await ledger.postMany(entries.map((entry) => ({ ...entry, status: 'posted', createdBy: 'system' })));
   return entries;
 }
 
@@ -632,21 +634,46 @@ async function reconcileAdmin() {
  * create two administrators.
  */
 let seeding = null;
+
+/**
+ * What happened the last time seeding was attempted in this process.
+ *
+ * Reported by /api/health. A seed that fails is otherwise completely silent
+ * from outside: the sign-in page just says the details do not match, because
+ * from its point of view they genuinely do not - there are no accounts. On a
+ * serverless host the log line is somewhere else entirely, behind a different
+ * login, which is exactly when somebody needs it most.
+ */
+let lastSeed = { attempted: false };
+
+/** The last seed attempt, for diagnostics. Never includes a credential. */
+function seedStatus() {
+  return lastSeed;
+}
+
 function ensureSeedOnce() {
   if (!seeding) {
+    const startedAt = Date.now();
     seeding = ensureSeed()
       .then(async (result) => {
         // After seeding, not instead of it: a first boot with the variables
         // already set seeds with them and this finds nothing to do.
+        let admin;
         try {
-          return { ...result, admin: await reconcileAdmin() };
+          admin = await reconcileAdmin();
         } catch (err) {
           console.warn('[rockfield] admin reconcile failed:', err.message);
-          return { ...result, admin: { changed: false, error: err.message } };
+          admin = { changed: false, error: err.message };
         }
+        lastSeed = {
+          attempted: true, ok: true, tookMs: Date.now() - startedAt,
+          seeded: Boolean(result.seeded), users: result.users, admin: admin.reason || null,
+        };
+        return { ...result, admin };
       })
       .catch((err) => {
         seeding = null;
+        lastSeed = { attempted: true, ok: false, tookMs: Date.now() - startedAt, error: err.message };
         console.warn('[rockfield] seed failed:', err.message);
         return { seeded: false, error: err.message };
       });
@@ -654,4 +681,4 @@ function ensureSeedOnce() {
   return seeding;
 }
 
-module.exports = { ensureSeed, ensureSeedOnce, reconcileAdmin, generateHistory, rng };
+module.exports = { ensureSeed, ensureSeedOnce, reconcileAdmin, seedStatus, generateHistory, rng };

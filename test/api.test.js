@@ -145,7 +145,11 @@ async function withApp(env, fn) {
         assert.strictEqual(res.body.schema.chat_sessions, 'ok');
         assert.match(res.body.schema.email_threads, /^optional:/);
         assert.ok(!res.body.warnings.some((w) => /did not answer/.test(w)), JSON.stringify(res.body.warnings));
-        console.log('  ok  probe passes against the current migration');
+        // The bank's own tables were missing from this probe entirely, so a
+        // bank that could not write a row still reported a healthy schema.
+        ['bank_users', 'bank_accounts', 'bank_transactions', 'bank_transfers', 'bank_cards', 'bank_settings']
+          .forEach((t) => assert.strictEqual(res.body.schema[t], 'ok', `${t} should probe ok`));
+        console.log('  ok  probe passes against the current migration, the bank included');
       }
     );
     good.close();

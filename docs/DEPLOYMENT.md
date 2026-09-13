@@ -457,18 +457,26 @@ If that does not do it, `/api/health` says what the server can actually see:
   "adminEmailFromEnv": true,
   "adminPasswordFromEnv": true,
   "encryptionKeySet": true,
-  "users": 4
+  "users": 4,
+  "seed": { "attempted": true, "ok": true, "tookMs": 1840, "seeded": true }
 }
 ```
 
 - `adminEmailFromEnv: false` - the variable is not in the **Production**
   environment, or there has been no redeploy since it was added.
-- `users: 0` - nothing is seeded yet. The first request to the site does it.
-- `users: null` - the bank's tables are missing. Run
+- `"users": 0, "seed": { "attempted": false }` - nothing has asked the bank for
+  data yet, so it has not created itself. **Open `/signin` and try to sign in**:
+  that is what seeds it. Then check `/api/health` again. Note that `/api/health`
+  deliberately does not seed - it is a read, not an action.
+- `"seed": { "ok": false, "error": ... }` - the bank tried and failed, and the
+  error names the table. Run `/api/health?probe=1`, which now covers all
+  sixteen of the bank's tables, and re-run the migration it points at.
+- `users: null` - the bank's tables are missing entirely. Run
   [`supabase/migrations/0003_bank.sql`](../supabase/migrations/0003_bank.sql).
-- Both `true` and you still cannot sign in - somebody has already signed into
-  that account, so its password is left alone deliberately. Set
-  `BANK_ADMIN_RESET=1`, redeploy, sign in, then remove the variable.
+- Everything `true`, `users` above zero, and you still cannot sign in -
+  somebody has already signed into that account, so its password is left alone
+  deliberately. Set `BANK_ADMIN_RESET=1`, redeploy, sign in, then remove the
+  variable.
 
 Two things that are not the cause, but get blamed: the sign-in page no longer
 lists demonstration logins on a deployment, by design; and a wrong password
