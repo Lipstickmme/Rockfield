@@ -10,7 +10,6 @@
  */
 
 const { BANK, PRODUCTS } = require('../constants');
-const logo = require('./logo');
 
 const YEAR = new Date().getFullYear();
 
@@ -28,33 +27,60 @@ function socialImage() {
 
 /* ---------------------------------------------------------------- icons --- */
 
+/*
+ * The icon set.
+ *
+ * Drawn to sit with the logo and the serif rather than against them: flat-cut
+ * ends and mitred corners instead of rounded ones, symmetrical about their own
+ * axis, and built out of the same vocabulary the mark uses - a pediment, a
+ * stylobate, a ruled line. The effect wanted is engraved, like the artwork on
+ * a share certificate, not the rounded geometric set that ships with every
+ * dashboard.
+ *
+ * All on a 24 x 24 grid, and all stroked - none of them are filled, so one
+ * definition serves a navy sidebar and a white page.
+ */
 const ICONS = {
-  home: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/>',
-  accounts: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/>',
-  activity: '<path d="M3 12h4l3 8 4-16 3 8h4"/>',
-  transfer: '<path d="M4 8h13l-3-3"/><path d="M20 16H7l3 3"/>',
-  people: '<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 11a3 3 0 1 0 0-6"/><path d="M18 20a6 6 0 0 0-2-4.5"/>',
-  bill: '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>',
-  deposit: '<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 20h16"/>',
-  card: '<rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M2 10h20"/>',
-  statement: '<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M10 13h5M10 17h5"/>',
-  bell: '<path d="M18 15V10a6 6 0 1 0-12 0v5l-2 3h16z"/><path d="M10 21h4"/>',
-  mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
-  shield: '<path d="M12 3 5 6v6c0 4.5 3 7.7 7 9 4-1.3 7-4.5 7-9V6z"/>',
-  user: '<circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/>',
-  console: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/>',
-  logout: '<path d="M10 5H5v14h5"/><path d="M15 8l4 4-4 4"/><path d="M19 12H9"/>',
-  check: '<path d="m4 12 5 5L20 6"/>',
-  lock: '<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 1 1 8 0v3"/>',
-  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
-  search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
-  chart: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
-  plus: '<path d="M12 5v14M5 12h14"/>',
-  building: '<path d="M4 21V5l8-2v18"/><path d="M12 9h8v12"/><path d="M8 8h1M8 12h1M8 16h1M16 13h1M16 17h1"/>',
+  // A portico on four columns. The dashboard of a bank should look like one.
+  home: '<path d="M2.8 9.6 12 4l9.2 5.6"/><path d="M5.2 9.6v8.2M9.7 9.6v8.2M14.3 9.6v8.2M18.8 9.6v8.2"/><path d="M3.6 17.8h16.8"/><path d="M2.4 20.4h19.2"/>',
+  // A bound ledger, seen from the spine side.
+  accounts: '<path d="M4.5 4.5h13a2.5 2.5 0 0 1 2.5 2.5v12.5H7a2.5 2.5 0 0 1-2.5-2.5z"/><path d="M4.5 17A2.5 2.5 0 0 1 7 14.5h13"/><path d="M8.5 8.5h7"/>',
+  // A ruled line with the figures moving across it.
+  activity: '<path d="M2.5 20.5h19"/><path d="M3.5 14.5 8 10l3.5 3.5L16.5 7l4 4"/>',
+  transfer: '<path d="M3.5 9h14"/><path d="M13.8 5.2 17.6 9l-3.8 3.8"/><path d="M20.5 15h-14"/><path d="M10.2 11.2 6.4 15l3.8 3.8"/>',
+  people: '<circle cx="9" cy="7.6" r="3.3"/><path d="M3.2 19.8a5.8 5.8 0 0 1 11.6 0"/><path d="M16.2 5.1a3.3 3.3 0 0 1 0 6.2"/><path d="M17 14a5.8 5.8 0 0 1 3.8 5.5"/>',
+  // A bill with a torn foot.
+  bill: '<path d="M6 3h12v18l-2.4-1.6L13.2 21l-2.4-1.6L8.4 21 6 19.4z"/><path d="M9 8h6M9 11.5h6M9 15h3.5"/>',
+  deposit: '<path d="M12 3.5V14"/><path d="M7.6 9.6 12 14l4.4-4.4"/><path d="M3.5 16.8v3.7h17v-3.7"/>',
+  card: '<path d="M2.5 5h19v14h-19z"/><path d="M2.5 9.6h19"/><path d="M5.6 12.6h4.2v3.2H5.6z"/>',
+  statement: '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9 11.5h6M9 15h6M9 18.5h3.5"/>',
+  bell: '<path d="M4.9 18.4c1.6-1.6 2.3-3.2 2.3-5.6v-1.9a4.8 4.8 0 0 1 9.6 0v1.9c0 2.4.7 4 2.3 5.6z"/><path d="M9.8 21.2h4.4"/><path d="M12 4.2V2.6"/>',
+  mail: '<path d="M2.5 5h19v14h-19z"/><path d="m2.5 5.9 9.5 6.6 9.5-6.6"/>',
+  // A heraldic shield: straight shoulders, a point at the foot.
+  shield: '<path d="M12 2.8 4.7 5.5v6.1c0 4.4 2.9 7.7 7.3 9.6 4.4-1.9 7.3-5.2 7.3-9.6V5.5z"/>',
+  user: '<circle cx="12" cy="7.8" r="3.6"/><path d="M4.8 20.6a7.2 7.2 0 0 1 14.4 0"/>',
+  console: '<path d="M2.5 4h19v16h-19z"/><path d="M2.5 8.6h19M9 8.6V20"/>',
+  logout: '<path d="M10.5 4.5H5v15h5.5"/><path d="m15.4 8 4 4-4 4"/><path d="M19.4 12H9.6"/>',
+  check: '<path d="m4.6 12.2 4.8 4.8L19.4 6.8"/>',
+  // A padlock with a keyhole, which is the part that says "locked".
+  lock: '<path d="M4 10h16v11H4z"/><path d="M7.8 10V7.2a4.2 4.2 0 0 1 8.4 0V10"/><circle cx="12" cy="14.6" r="1.4"/><path d="M12 16v2.4"/>',
+  // Hands, and the four quarter marks of a dial.
+  clock: '<circle cx="12" cy="12" r="8.8"/><path d="M12 6.6V12l3.9 2.3"/><path d="M12 3.2v1.5M20.8 12h-1.5M12 20.8v-1.5M3.2 12h1.5"/>',
+  search: '<circle cx="10.8" cy="10.8" r="6.8"/><path d="m15.7 15.7 5 5"/>',
+  chart: '<path d="M2.5 20.5h19"/><path d="M5.8 20.5V12M10.5 20.5V5.6M15.2 20.5v-6M19.9 20.5V9.2"/>',
+  plus: '<path d="M12 4.6v14.8M4.6 12h14.8"/>',
+  building: '<path d="M3.4 20.5V6.2L12 3.5v17"/><path d="M12 9.6h8.6v10.9"/><path d="M2 20.5h20"/><path d="M6.6 8.8v1.7M6.6 13.1v1.7M6.6 17.4v1.7M15.8 13.1v1.7M15.8 17.4v1.7"/>',
 };
 
+/**
+ * One icon, inline.
+ *
+ * Butt caps and mitred joins are the whole difference between this set and a
+ * rounded one: a flat-cut end and a sharp corner read as engraved, which is
+ * what sits with the serif.
+ */
 const icon = (name, size = 18) =>
-  `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ''}</svg>`;
+  `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="6" aria-hidden="true">${ICONS[name] || ''}</svg>`;
 
 /* ----------------------------------------------------------------- head --- */
 
@@ -81,9 +107,7 @@ function head({ title, description, noindex = false, styles = [], bodyClass }) {
   <link rel="icon" href="/favicon.ico" sizes="32x32" />
   <link rel="icon" href="/favicon.png" type="image/png" sizes="512x512" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/fonts.css" />
   <link rel="stylesheet" href="/css/bank.css" />
   ${styles.map((href) => `<link rel="stylesheet" href="${href}" />`).join('\n  ')}
 </head>
@@ -136,7 +160,7 @@ function sidebar(active) {
   return `
     <aside class="rf-side" id="rf-side">
       <div class="rf-side-brand">
-        <span class="rf-mark">${logo.emblem({ height: 26, weight: 8 })}</span>
+        <img class="rf-mark" src="/assets/bank/logomark-light.png" alt="" width="53" height="28" />
         <span>
           <strong>${BANK.shortName}</strong>
           <small>Online banking</small>
@@ -200,9 +224,8 @@ function authPage({ title, description, content, extraScripts = [] }) {
     head({ title, description, noindex: true, bodyClass: 'rf-auth' }),
     `  <div class="rf-auth-wrap">
     <section class="rf-auth-aside">
-      <a class="brandline" href="/" style="text-decoration:none;color:inherit">
-        <span class="rf-mark">${logo.emblem({ height: 26, weight: 8 })}</span>
-        <strong>${BANK.name}</strong>
+      <a class="brandline" href="/" aria-label="${BANK.name} home">
+        <img class="rf-lockup" src="/assets/bank/logo-light.png" alt="${BANK.name}" width="240" height="143" />
       </a>
       <h2>Your money, held the way a bank should hold it.</h2>
       <p>${BANK.tagline} Deposits insured by the FDIC to the maximum permitted by law, and a real person on the phone when you need one.</p>
@@ -236,7 +259,7 @@ function marketingNav(active = '') {
   <header class="rf-marketing-nav">
     <div class="wrap inner">
       <a class="brandline" href="/" aria-label="${BANK.name} home">
-        <span class="rf-mark on-paper">${logo.emblem({ height: 34, weight: 7 })}</span>
+        <img class="rf-mark on-paper" src="/assets/bank/logomark-dark.png" alt="" width="87" height="46" />
         <span>
           <strong>${BANK.shortName}<span class="rf-full-name"> ${BANK.name.replace(`${BANK.shortName} `, '')}</span></strong>
           <small>Member FDIC</small>
@@ -264,10 +287,7 @@ function marketingFooter() {
     <div class="wrap">
       <div class="cols">
         <div>
-          <div class="brandline" style="display:flex;gap:10px;align-items:center;margin-bottom:12px">
-            <span class="rf-mark">${logo.emblem({ height: 26, weight: 8 })}</span>
-            <strong style="color:#fff;font-family:var(--rf-display);font-size:16px">${BANK.name}</strong>
-          </div>
+          <img class="rf-lockup" src="/assets/bank/logo-light.png" alt="${BANK.name}" width="190" height="113" style="margin-bottom:16px" />
           <p style="margin:0 0 12px;max-width:34ch">${BANK.tagline} Personal and business banking since ${BANK.established}.</p>
           <p style="margin:0;font-size:12.5px" data-site-row="address" hidden><span data-site="address"></span></p>
         </div>

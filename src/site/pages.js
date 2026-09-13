@@ -21,7 +21,6 @@ const site = require('../data/site.json');
 const images = require('./images');
 const { page } = require('./layout');
 const { marketingPage, icon, productCard } = require('../bank/site/layout');
-const logo = require('../bank/site/logo');
 const { BANK, PRODUCTS } = require('../bank/constants');
 
 const YEAR = new Date().getFullYear();
@@ -43,7 +42,7 @@ function header({ eyebrow, title, lede, image }) {
   <header class="rf-hero compact ${image ? 'has-photo' : 'has-mark'}">
     ${image
       ? `<img class="rf-hero-photo" src="${image}" alt="" aria-hidden="true" />`
-      : `<span class="rf-hero-mark" aria-hidden="true">${logo.emblem({ height: 300, weight: 5 })}</span>`}
+      : `<img class="rf-hero-mark" src="/assets/bank/logomark-light.png" alt="" aria-hidden="true" width="940" height="499" />`}
     <div class="wrap">
       <span class="rf-eyebrow">${eyebrow}</span>
       <h1 style="font-size:clamp(32px,4.6vw,52px)">${title}</h1>
@@ -192,7 +191,7 @@ const homeContent = `
 
   <section class="rf-section alt">
     <div class="wrap" style="max-width:820px;text-align:center">
-      <blockquote style="font-family:var(--rf-display);font-size:clamp(21px,2.6vw,30px);line-height:1.35;letter-spacing:-.02em;margin:0 0 18px">
+      <blockquote style="font-family:var(--rf-headline);font-weight:500;font-style:italic;font-size:clamp(24px,3vw,36px);line-height:1.32;letter-spacing:0;margin:0 0 18px">
         &ldquo;${ceo.quote}&rdquo;
       </blockquote>
       <div class="rf-small rf-muted"><strong>${ceo.name}</strong> &middot; ${ceo.role}</div>
@@ -579,23 +578,23 @@ const legalContent = `
   <section class="rf-section">
     <div class="wrap" style="max-width:820px">
       <article class="rf-card"><div class="rf-card-body">
-        <h2 id="privacy" style="font-family:var(--rf-display);margin-top:0;font-size:24px">Privacy notice</h2>
+        <h2 id="privacy" style="font-family:var(--rf-display);margin-top:0;font-size:21px">Privacy notice</h2>
         <p class="rf-muted">${BANK.legalName} collects the information needed to open and run your accounts: your name, address, date of birth, Social Security number, identification documents, transaction history and the devices you use to reach us. We share it only with the service providers who help us run the bank, and with regulators and law enforcement where the law requires it. We do not sell it.</p>
         <p class="rf-muted">You may limit marketing at any time under Alerts inside online banking, or by calling <span data-site="phone">client services</span>.</p>
 
-        <h2 id="terms" style="font-family:var(--rf-display);font-size:24px">Online banking agreement</h2>
+        <h2 id="terms" style="font-family:var(--rf-display);font-size:21px">Online banking agreement</h2>
         <p class="rf-muted">Access to online banking is personal to you. Keep your password and one-time codes to yourself, tell us immediately if you think someone else has them, and review your statements. We may hold, delay or decline a payment where we reasonably suspect fraud, where it would breach a limit, or where sanctions screening requires a manual check. Where we decline one, the funds return to your available balance and you are told why.</p>
 
-        <h2 id="disclosures" style="font-family:var(--rf-display);font-size:24px">Truth in Savings</h2>
+        <h2 id="disclosures" style="font-family:var(--rf-display);font-size:21px">Truth in Savings</h2>
         <p class="rf-muted">Annual Percentage Yields are variable and may change at any time after an account is opened. Interest is compounded and credited monthly. Fees may reduce earnings. A penalty may be imposed for early withdrawal from a certificate. Minimum balance requirements, where they apply, are shown on the rates page and in your account agreement.</p>
 
-        <h2 id="funds" style="font-family:var(--rf-display);font-size:24px">Funds availability</h2>
+        <h2 id="funds" style="font-family:var(--rf-display);font-size:21px">Funds availability</h2>
         <p class="rf-muted">For checks deposited through mobile deposit, the first $225 is generally available on the first business day after the day of deposit, and the remainder by the second business day. We may place a longer hold in the circumstances permitted by Regulation CC, and we will tell you when we do.</p>
 
-        <h2 id="accessibility" style="font-family:var(--rf-display);font-size:24px">Accessibility</h2>
+        <h2 id="accessibility" style="font-family:var(--rf-display);font-size:21px">Accessibility</h2>
         <p class="rf-muted">We aim to meet WCAG 2.2 AA across online banking. If any part of this site is difficult to use, tell us on <span data-site="phone">the client services line</span> or <a href="mailto:${site.email}" data-site="email">${site.email}</a> and we will help you complete what you were doing and fix the underlying problem.</p>
 
-        <h2 id="demo" style="font-family:var(--rf-display);font-size:24px">About this application</h2>
+        <h2 id="demo" style="font-family:var(--rf-display);font-size:21px">About this application</h2>
         <p class="rf-muted">${BANK.legalName} is a fictional institution. This site is a demonstration of a banking application: the routing number, account numbers, card numbers and customer records used throughout are synthetic, reach no real financial institution, and no real money can move through it.</p>
       </div></article>
     </div>
@@ -651,7 +650,7 @@ const deskContent = `
     <div class="admin-shell" id="admin-shell" hidden>
       <header class="admin-bar">
         <a class="admin-brand" href="/">
-          <img src="/assets/bank/wordmark-light.svg" alt="Rockfield National Bank" width="520" height="96" />
+          <img src="/assets/bank/logo-light.png" alt="Rockfield National Bank" width="240" height="143" />
           <span>Client services desk</span>
         </a>
         <div class="admin-bar-end">

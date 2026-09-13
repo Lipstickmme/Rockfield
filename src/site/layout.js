@@ -59,9 +59,7 @@ function head({ title, description, noindex = false, styles = [] }) {
   <link rel="icon" href="/favicon.ico" sizes="32x32" />
   <link rel="icon" href="/favicon.png" type="image/png" sizes="512x512" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/fonts.css" />
   <link rel="stylesheet" href="/css/styles.css" />
   <link rel="stylesheet" href="/css/bank.css" />
   ${styles.map((href) => `<link rel="stylesheet" href="${href}" />`).join('\n  ')}
@@ -74,7 +72,7 @@ function nav(active = '') {
   return `
   <header class="nav" id="nav">
     <a class="brand" href="/" aria-label="Rockfield National Bank home">
-      <img class="brand-logo" src="/assets/bank/wordmark-dark.svg" alt="Rockfield National Bank" width="520" height="96" />
+      <img class="brand-logo" src="/assets/bank/logo-dark.png" alt="Rockfield National Bank" width="240" height="143" />
     </a>
     <nav class="nav-links" id="navlinks">
       ${link('/personal', 'Personal', 'services')}
@@ -95,7 +93,7 @@ function footer() {
   <footer class="footer">
     <div class="wrap footer-top">
       <div class="footer-brand">
-        <img class="brand-logo footer-logo" src="/assets/bank/wordmark-light.svg" alt="Rockfield National Bank" width="520" height="96" />
+        <img class="brand-logo footer-logo" src="/assets/bank/logo-light.png" alt="Rockfield National Bank" width="240" height="143" />
         <p>Personal and business banking since 1924. Member FDIC.</p>
       </div>
       <div class="col">
