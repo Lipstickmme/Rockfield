@@ -10,6 +10,7 @@
 
 const config = require('../utils/config');
 const { getSupabase } = require('../utils/supabase');
+const security = require('../bank/security');
 
 /**
  * `GET /api/health?probe=1` asks Postgres for one row of every column the
@@ -133,6 +134,32 @@ async function countUsers() {
  * Returns null when Supabase is not configured at all, which is a different
  * thing and not a fault: running on files is the documented local default.
  */
+/**
+ * The administrators the bank would actually accept, masked.
+ *
+ * "Invalid credentials" is the same answer for a wrong password, a wrong
+ * address, and an account that was never created - which is correct at the
+ * sign-in page and useless when you are trying to work out why your own
+ * variables do not work. This says which address is on record and whether it
+ * is the one in the environment, without saying what the password is: the
+ * local part is masked, and no hash goes anywhere near this response.
+ */
+async function administrators() {
+  const wanted = String(process.env.BANK_ADMIN_EMAIL || '').trim().toLowerCase();
+  try {
+    const rows = await require('../bank/db').db.users.find({ role: 'admin' });
+    return rows.map((u) => ({
+      email: security.maskEmail(u.email),
+      matchesEnv: Boolean(wanted) && String(u.email || '').toLowerCase() === wanted,
+      status: u.status,
+      hasSignedIn: Boolean(u.last_login_at),
+      lockedUntil: u.locked_until || null,
+    }));
+  } catch (err) {
+    return null;
+  }
+}
+
 async function bankTablesReadable() {
   const supabase = getSupabase();
   if (!supabase) return null;
@@ -196,6 +223,15 @@ exports.health = async (req, res) => {
   }
   if (!process.env.BANK_ENCRYPTION_KEY) {
     warnings.push('BANK_ENCRYPTION_KEY is not set, so Social Security and card numbers are encrypted with a development key. Set a 32-byte key before anyone real uses this.');
+  }
+  const admins = await administrators();
+  if (adminEmail && admins && admins.length && !admins.some((a) => a.matchesEnv)) {
+    warnings.push(
+      `BANK_ADMIN_EMAIL is set, but the administrator on record is a different address (${admins.map((a) => a.email).join(', ')}). The bank was seeded before the variable existed, and the account has been signed into since, so it is left alone deliberately. Set BANK_ADMIN_RESET=1 and redeploy to move it.`
+    );
+  }
+  if (admins && admins.some((a) => a.lockedUntil && a.lockedUntil > new Date().toISOString())) {
+    warnings.push('An administrator account is locked after too many failed sign-ins. It unlocks on its own; the lock expiry is in bank.administrators.');
   }
   if (config.forwardWouldLoop()) {
     warnings.push(
@@ -289,6 +325,7 @@ exports.health = async (req, res) => {
       // false means Supabase is connected but 0003_bank.sql has not been run,
       // and the bank has silently fallen back to ephemeral local files.
       tables: bankTables === null ? 'not using supabase' : bankTables,
+      administrators: await administrators(),
       // What this particular server process has seen. On a serverless host
       // each request may land on a different instance, so `attempted: false`
       // means "not in the process answering you", not "never anywhere" -

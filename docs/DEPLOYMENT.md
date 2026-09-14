@@ -437,6 +437,30 @@ Legacy aliases `CONTACT_NOTIFY_EMAIL` and `NOTIFY_FROM` still work if `FORM_TO` 
 
 ---
 
+## Two sign-ins, and which is which
+
+This is the single most common confusion, so before the troubleshooting: the
+site has **two unrelated login systems**. They share no accounts, no passwords
+and no user table.
+
+| | `/signin` - the bank | `/admin` - the client services desk |
+| --- | --- | --- |
+| Who it is for | Customers, and bank staff | Whoever answers website enquiries |
+| Where the accounts live | `bank_users`, this app's own table | **Supabase Auth**, plus a row in `admins` |
+| How an account is made | Seeded from `BANK_ADMIN_EMAIL` / `BANK_DEMO_EMAIL`, or registered by staff in the console | Created in the Supabase dashboard under Authentication, then granted with `supabase/grant-admin.sql` |
+| Password checked by | This app, scrypt | Supabase |
+| Where it lands | `/dashboard` for a customer, `/console` for staff | `/admin` |
+
+So: **creating a user under Authentication in Supabase does nothing for
+`/signin`.** The bank does not use Supabase Auth. It stores its own accounts in
+`bank_users` and checks its own passwords. Conversely, `BANK_ADMIN_EMAIL` does
+nothing for `/admin`.
+
+There is no separate console login. `/console` is a page inside online
+banking: sign in at `/signin` with an account whose role is `admin`, and the
+sidebar gains **Admin console**. A customer who types `/console` is sent back
+to their dashboard.
+
 ## Troubleshooting
 
 **I set `BANK_ADMIN_EMAIL` and `BANK_ADMIN_PASSWORD`, and cannot sign in.**
@@ -473,6 +497,10 @@ If that does not do it, `/api/health` says what the server can actually see:
   run. The storage layer falls back to local files when a table is missing, so
   the bank will appear to work and then forget everything the moment the
   container is recycled. Run the migration.
+- `"administrators"` lists the accounts the bank would accept, with the local
+  part of each address masked. `matchesEnv: true` on one of them means
+  `BANK_ADMIN_EMAIL` took effect. An empty list means the bank has no staff
+  account at all, which is the same thing as `users: 0`.
 - `"seed": { "attempted": false }` on its own means nothing - it describes only
   the server process that answered you, and on a serverless host the next
   request lands somewhere else. `users` is the field that speaks for the whole
