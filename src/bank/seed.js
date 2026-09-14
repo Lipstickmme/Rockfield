@@ -449,7 +449,26 @@ async function ensureSeed(options = {}) {
     country: 'United States',
   });
 
-  const demoEmail = process.env.BANK_DEMO_EMAIL || 'demo@rockfieldbank.com';
+  // The demonstration customer cannot share an address with the
+  // administrator: they are two accounts with two roles, and one email column
+  // is unique. Setting both variables to the same address is an easy mistake -
+  // they sit next to each other in a deployment's settings and both read like
+  // "the login" - and it used to kill the seed right here, after the
+  // administrator had been created, leaving a bank that looked seeded, refused
+  // to seed again, and had no customer, no account and no history.
+  //
+  // The administrator keeps the address that was asked for, because that is
+  // the one somebody signs in with. The customer gets the built-in one, and
+  // the clash is reported rather than silently worked around.
+  const DEFAULT_DEMO_EMAIL = 'demo@rockfieldbank.com';
+  const requestedDemoEmail = process.env.BANK_DEMO_EMAIL || DEFAULT_DEMO_EMAIL;
+  const demoClashesWithAdmin = requestedDemoEmail.trim().toLowerCase() === adminEmail.trim().toLowerCase();
+  if (demoClashesWithAdmin) {
+    console.warn(
+      `[rockfield] BANK_DEMO_EMAIL is the same address as BANK_ADMIN_EMAIL. They must be different accounts, so the demonstration customer is on ${DEFAULT_DEMO_EMAIL} instead.`
+    );
+  }
+  const demoEmail = demoClashesWithAdmin ? DEFAULT_DEMO_EMAIL : requestedDemoEmail;
   const demoPassword = process.env.BANK_DEMO_PASSWORD || 'Bedrock#Demo2026';
   const { user: customer } = await users.createUser({
     email: demoEmail,
@@ -590,6 +609,7 @@ async function ensureSeed(options = {}) {
     seeded: true,
     admin: { email: adminEmail, password: adminPassword },
     customer: { email: demoEmail, password: demoPassword },
+    demoEmailIgnored: demoClashesWithAdmin ? requestedDemoEmail : null,
     secondary: { email: second.email, password: temporaryPassword },
     accounts: [checking.account_number, savings.account_number, cardAccount.account_number],
     cards: [debitCard.last4, creditCard.last4],

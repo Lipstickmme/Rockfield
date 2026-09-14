@@ -221,6 +221,12 @@ exports.health = async (req, res) => {
   if (adminPassword && !adminEmail) {
     warnings.push('BANK_ADMIN_PASSWORD is set but BANK_ADMIN_EMAIL is not, so it is not applied to any account.');
   }
+  const demoEmail = String(process.env.BANK_DEMO_EMAIL || '').trim().toLowerCase();
+  if (adminEmail && demoEmail && adminEmail.toLowerCase() === demoEmail) {
+    warnings.push(
+      'BANK_ADMIN_EMAIL and BANK_DEMO_EMAIL are the same address. They are two different accounts with two different roles and one unique email column, so the demonstration customer is given the built-in address instead. Set BANK_DEMO_EMAIL to a different address, or remove it.'
+    );
+  }
   if (!process.env.BANK_ENCRYPTION_KEY) {
     warnings.push('BANK_ENCRYPTION_KEY is not set, so Social Security and card numbers are encrypted with a development key. Set a 32-byte key before anyone real uses this.');
   }
@@ -279,6 +285,7 @@ exports.health = async (req, res) => {
       return {
         ran: true, ok: true, tookMs: Date.now() - startedAt, cleared,
         users: await countUsers(), seeded: Boolean(result.seeded), admin: admin.reason || null,
+        demoEmailIgnored: result.demoEmailIgnored || undefined,
         note: 'Sign in at /signin with BANK_ADMIN_EMAIL and BANK_ADMIN_PASSWORD.',
       };
     };

@@ -283,6 +283,45 @@ async function withApp(env, fn) {
     );
     halfBuilt.close();
 
+    // The two variables sit next to each other in a deployment's settings and
+    // both read like "the login", so setting them to one address is an easy
+    // mistake. It used to kill the seed immediately after the administrator
+    // was created - one unique email column, two accounts - and leave the bank
+    // permanently half built.
+    const sameEmail = await mock.start({});
+    await withApp(
+      {
+        SUPABASE_URL: `http://127.0.0.1:${sameEmail.address().port}`,
+        SUPABASE_SERVICE_ROLE_KEY: mock.SERVICE_KEY,
+        SUPABASE_ANON_KEY: mock.ANON_KEY,
+        BANK_ADMIN_EMAIL: 'support@rockfield.test',
+        BANK_ADMIN_PASSWORD: 'Quarry#Road2026',
+        BANK_DEMO_EMAIL: 'support@rockfield.test',
+        BANK_DEMO_PASSWORD: 'Bedrock#Demo2026',
+      },
+      async (base) => {
+        const warned = await req(base, 'GET', '/api/health');
+        assert.ok(
+          warned.body.warnings.some((w) => /BANK_ADMIN_EMAIL and BANK_DEMO_EMAIL are the same/.test(w)),
+          JSON.stringify(warned.body.warnings)
+        );
+
+        const built = await req(base, 'GET', '/api/health?seed=1');
+        assert.strictEqual(built.body.bank.seedRun.ok, true, JSON.stringify(built.body.bank.seedRun));
+        assert.strictEqual(built.body.bank.seedState, 'complete', 'it finishes rather than dying half way');
+        assert.strictEqual(built.body.bank.seedRun.demoEmailIgnored, 'support@rockfield.test');
+
+        // The administrator keeps the address that was asked for.
+        const login = await req(base, 'POST', '/api/bank/auth/login', {
+          email: 'support@rockfield.test', password: 'Quarry#Road2026',
+        });
+        assert.strictEqual(login.status, 200, JSON.stringify(login.body));
+        assert.strictEqual(login.body.user.role, 'admin');
+        console.log('  ok  one address for both variables no longer wedges the bank');
+      }
+    );
+    sameEmail.close();
+
     // And when the bank's tables are missing it says so rather than failing
     // silently, which is the whole point of the endpoint.
     const noTables = await mock.start({});

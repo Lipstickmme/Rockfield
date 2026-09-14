@@ -425,7 +425,7 @@ notifications, so you can work entirely offline. To test notifications locally, 
 | `BANK_ENCRYPTION_KEY` | **for the bank** | AES-256-GCM key for SSNs, ID numbers and card numbers. 64 hex characters. Set before the first customer |
 | `BANK_ADMIN_EMAIL` / `BANK_ADMIN_PASSWORD` | for the bank | The administrator's sign-in. Applied on every boot, not only the first |
 | `BANK_ADMIN_RESET` | no | `1` resets the administrator's password to `BANK_ADMIN_PASSWORD` on the next boot. Unset it afterwards |
-| `BANK_DEMO_EMAIL` / `BANK_DEMO_PASSWORD` | no | The seeded demonstration customer |
+| `BANK_DEMO_EMAIL` / `BANK_DEMO_PASSWORD` | no | The seeded demonstration customer. Must not be the same address as `BANK_ADMIN_EMAIL` |
 | `BANK_ALERT_FROM` | for email | Sender for banking alerts (falls back to `FORM_FROM`) |
 | `PUBLIC_BASE_URL` | for email | Absolute base for the links inside alert emails |
 | `BANK_RATE_LIMIT_MAX` | no | Requests per minute per IP against `/api/bank` (default 300) |
@@ -493,6 +493,12 @@ If that does not do it, `/api/health` says what the server can actually see:
   happened, rather than leaving the reason in a function log. It only acts on a
   bank with no accounts, so it is safe to leave reachable and a no-op
   afterwards. Plain `/api/health` never seeds - it is a read.
+- `"seedRun": { "ok": false, "error": "That email address already has an
+  account." }` - `BANK_ADMIN_EMAIL` and `BANK_DEMO_EMAIL` are set to the same
+  address. They are two accounts with two roles and one unique email column.
+  The administrator keeps the address you asked for and the demonstration
+  customer falls back to the built-in one, but set `BANK_DEMO_EMAIL` to a
+  different address, or remove it.
 - `"seedState": "incomplete"` with one or two accounts - seeding stopped part
   way and left an administrator with no customers, accounts or history. The
   bank cannot fix this itself: its guard asks whether any accounts exist, and
