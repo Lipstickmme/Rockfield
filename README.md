@@ -241,11 +241,18 @@ Every banking table has row level security on with no permissive policy: the
 browser's anon key reaches none of it, and authorisation is decided in the
 application, where the session lives.
 
-### Email
+### Email and text messages
 
 Alerts are written to the database first and sent second. Without
 `RESEND_API_KEY` they are stored, shown in the customer's notification centre,
 and marked "not sent" in the console.
+
+Texts go through Pingram on the same terms, and are delivered independently of
+the email: an SMS outage never marks a delivered email failed. Money arriving
+raises two alerts rather than one — the credit with the current balance, then
+the available balance — because those are different numbers answering
+different questions. [docs/RUNNING-THE-BANK.md](docs/RUNNING-THE-BANK.md) sets
+both providers up and shows what the customer receives.
 
 One-time codes behave the same way, with a guard: on a laptop with no mail
 provider they come back in the API response so development can sign into
@@ -266,6 +273,10 @@ public demonstration.
 | `BANK_ADMIN_RESET` | `1` resets that password on the next boot, for when it is lost |
 | `BANK_DEMO_EMAIL` / `BANK_DEMO_PASSWORD` | The seeded demonstration customer |
 | `BANK_ALERT_FROM` | Sender for alert emails |
+| `PINGRAM_API_KEY` | Pingram secret key. Unset means no texts are delivered |
+| `PINGRAM_SMS_FROM` | The sending number, in E.164 |
+| `PINGRAM_DEFAULT_COUNTRY` | Country code assumed for a ten-digit number (`1`) |
+| `PINGRAM_SMS_URL` | Override for Pingram's send endpoint |
 | `PUBLIC_BASE_URL` | Absolute base for links inside emails |
 | `BANK_RATE_LIMIT_MAX` | Requests per minute per IP against `/api/bank` (300) |
 | `BANK_LOGIN_RATE_LIMIT` | Sign-in attempts per five minutes (20) |
@@ -313,3 +324,5 @@ read-only apart from `/tmp` and nothing there survives between invocations, so
 production needs Supabase — the file backend is for local development.
 
 `docs/DEPLOYMENT.md` covers Supabase, Resend and inbound mail step by step.
+`docs/RUNNING-THE-BANK.md` covers the other half: registering customers,
+crediting an account, moving money, and wiring up email and text alerts.

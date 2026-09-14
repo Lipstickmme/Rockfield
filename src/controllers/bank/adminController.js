@@ -566,18 +566,32 @@ const adjustBalance = asyncHandler(async (req, res) => {
   });
 
   if (user && req.body.notify !== false && status === 'posted') {
-    await alerts.notifyUser(user, direction === 'credit' ? 'deposit_posted' : 'large_transaction', {
-      subject: `${direction === 'credit' ? 'Deposit' : 'Withdrawal'} posted - ${money(amount)}`,
-      heading: direction === 'credit' ? 'Money in' : 'Money out',
-      intro: `${money(amount)} ${direction === 'credit' ? 'was credited to' : 'was debited from'} ${account.nickname || account.name} ${ids.maskAccount(account.account_number)}.`,
-      rows: [
-        { label: 'Description', value: description },
-        { label: 'Amount', value: money(amount) },
-        { label: 'New balance', value: money(updated.balance) },
-        { label: 'Available', value: money(ledger.availableFor(updated)) },
-        { label: 'Reference', value: transaction.reference },
-      ],
-    });
+    if (direction === 'credit') {
+      // Two messages: it has landed, then what can be spent. See
+      // alerts.creditPosted - those are different numbers whenever any part of
+      // the balance is on hold, and one message carrying both is the thing
+      // customers misread.
+      await alerts.creditPosted(user, {
+        account: updated,
+        transaction,
+        amount,
+        balance: updated.balance,
+        available: ledger.availableFor(updated),
+      });
+    } else {
+      await alerts.notifyUser(user, 'large_transaction', {
+        subject: `Withdrawal posted - ${money(amount)}`,
+        heading: 'Money out',
+        intro: `${money(amount)} was debited from ${account.nickname || account.name} ${ids.maskAccount(account.account_number)}.`,
+        rows: [
+          { label: 'Description', value: description },
+          { label: 'Amount', value: money(amount) },
+          { label: 'New balance', value: money(updated.balance) },
+          { label: 'Available', value: money(ledger.availableFor(updated)) },
+          { label: 'Reference', value: transaction.reference },
+        ],
+      });
+    }
   }
 
   res.status(201).json({

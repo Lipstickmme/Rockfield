@@ -5,6 +5,10 @@ deploy on Vercel, then switch the backend on.
 
 Everything here fits inside free tiers (Vercel Hobby, Supabase, Resend).
 
+Once it is up, [RUNNING-THE-BANK.md](RUNNING-THE-BANK.md) covers running it:
+registering customers, crediting accounts, moving money, and setting up the
+email and text alerts customers receive.
+
 ---
 
 ## How it fits together
@@ -286,6 +290,11 @@ DNS records) and change `FORM_FROM` to something like
 `Rockfield National Bank <support@yourdomain.com>`. Mail from a verified domain is far less
 likely to be treated as spam.
 
+To text customers as well as email them, add `PINGRAM_API_KEY` and
+`PINGRAM_SMS_FROM` and redeploy.
+[RUNNING-THE-BANK.md](RUNNING-THE-BANK.md#part-2--email-and-text-messages)
+walks through both providers and what a customer receives when money arrives.
+
 ---
 
 ## Step 8: Receive mail on your domain and forward it
@@ -427,6 +436,10 @@ notifications, so you can work entirely offline. To test notifications locally, 
 | `BANK_ADMIN_RESET` | no | `1` resets the administrator's password to `BANK_ADMIN_PASSWORD` on the next boot. Unset it afterwards |
 | `BANK_DEMO_EMAIL` / `BANK_DEMO_PASSWORD` | no | The seeded demonstration customer. Must not be the same address as `BANK_ADMIN_EMAIL` |
 | `BANK_ALERT_FROM` | for email | Sender for banking alerts (falls back to `FORM_FROM`) |
+| `PINGRAM_API_KEY` | for texts | Pingram secret key. Without it alerts are still raised and stored, just not texted |
+| `PINGRAM_SMS_FROM` | for texts | The sending number, in E.164 (`+18005559999`) |
+| `PINGRAM_DEFAULT_COUNTRY` | no | Country code assumed for a ten-digit number with no `+` (default `1`) |
+| `PINGRAM_SMS_URL` | no | Override for Pingram's send endpoint (default `https://api.pingram.io/sms`) |
 | `PUBLIC_BASE_URL` | for email | Absolute base for the links inside alert emails |
 | `BANK_RATE_LIMIT_MAX` | no | Requests per minute per IP against `/api/bank` (default 300) |
 | `BANK_LOGIN_RATE_LIMIT` | no | Sign-in attempts per five minutes per IP (default 20) |

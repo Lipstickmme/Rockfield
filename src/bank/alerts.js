@@ -17,6 +17,7 @@ const { db } = require('./db');
 const ids = require('./ids');
 const settings = require('./settings');
 const contact = require('./contact');
+const sms = require('./sms');
 const { ALERT_TYPES, BANK } = require('./constants');
 
 const TYPES = new Map(ALERT_TYPES.map((t) => [t.id, t]));
@@ -113,6 +114,23 @@ function renderText({ heading, intro, rows = [], body = '', cta, footNote, bankN
   return lines.join('\n');
 }
 
+/**
+ * The text version: one sentence, and the bank's name first.
+ *
+ * A phone shows the opening words in the notification shade, so the name and
+ * the amount have to be at the front. Callers can pass `sms` to write their
+ * own; this is the fallback, built from the same content the email uses.
+ */
+function smsText({ heading, intro, body, rows = [], bankName }) {
+  const name = bankName || BANK.name;
+  const lead = intro || body || heading || 'Account notification';
+  const detail = rows
+    .filter((r) => /balance|amount|reference/i.test(r.label))
+    .map((r) => `${r.label}: ${r.value}`)
+    .join('. ');
+  return [`${name}: ${lead}`, detail].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim().slice(0, 320);
+}
+
 /* ---------------------------------------------------------------- send --- */
 
 /**
@@ -132,12 +150,17 @@ async function notifyUser(user, typeId, content = {}) {
   const subject = content.subject || content.heading || 'Account notification';
   const payload = { ...content, bankName };
 
+  // A text goes out alongside the email when the customer has a mobile number
+  // we can read and has not turned texts off. Email stays the record: the SMS
+  // is a nudge, and it says so by being short.
+  const smsNumber = user.sms_alerts === false ? '' : sms.numberFor(user);
+
   const alert = {
     id: ids.uuid(),
     created_at: new Date().toISOString(),
     user_id: user.id,
     type: typeId,
-    channel: 'email',
+    channel: smsNumber ? 'email+sms' : 'email',
     subject,
     preview: content.intro || content.body || '',
     body_text: renderText(payload),
@@ -164,12 +187,99 @@ async function notifyUser(user, typeId, content = {}) {
     const patch = result.ok
       ? { status: 'sent', sent_at: new Date().toISOString(), provider_id: result.id || null }
       : { status: result.error === 'no_api_key' ? 'not_configured' : 'failed', error: result.error || null };
+
+    // The text is its own delivery and its own failure: an SMS provider being
+    // down must not mark a delivered email as failed, and the other way round.
+    if (smsNumber) {
+      const short = content.sms || smsText(payload);
+      const out = await sms.send({ to: smsNumber, message: short, type: typeId, userId: user.id });
+      patch.sms_status = out.ok ? 'sent' : (out.skipped ? 'not_configured' : 'failed');
+      if (out.error) patch.sms_error = out.error;
+    }
+
     await db.alerts.update(alert.id, patch);
     return { ...alert, ...patch };
   } catch (err) {
     await db.alerts.update(alert.id, { status: 'failed', error: err.message });
     return { ...alert, status: 'failed' };
   }
+}
+
+/**
+ * Money arriving, announced in two messages.
+ *
+ * Real banks send two, and they are answering two different questions. The
+ * first is "has it landed" - the amount, the account, the balance the
+ * statement will show. The second is "can I spend it" - the available balance,
+ * which is the one that matters at a card terminal and is not the same number
+ * whenever any part of the account is on hold.
+ *
+ * Sent in that order and separately on purpose: one message carrying both
+ * figures is the thing customers misread, because the two numbers sit next to
+ * each other and only one of them is spendable.
+ *
+ * Both go by email and, where the customer has a mobile, by text. The second
+ * can be turned off with the `availableBalanceAlert` setting for a bank that
+ * would rather send one.
+ */
+async function creditPosted(user, { account, transaction, amount, balance, available }) {
+  if (!user || !user.id) return [];
+
+  const cfg = await settings.get();
+  const label = `${account.nickname || account.name} ${ids.maskAccount(account.account_number)}`;
+  // Read the hold off the account rather than inferring it from the two
+  // balances. Available is balance minus holds *plus* any overdraft line, so
+  // subtracting one from the other gives a negative number on an account with
+  // an overdraft and the hold disappears from the message entirely.
+  const held = Math.max(0, Number(account.hold_amount || 0));
+  const overdraft = Math.max(0, Number(account.overdraft_limit || 0));
+  const out = [];
+
+  // 1. It has landed.
+  out.push(await notifyUser(user, 'deposit_posted', {
+    force: true,
+    subject: `Money in - ${money(amount)}`,
+    heading: 'Money in',
+    intro: `${money(amount)} was credited to ${label}.`,
+    rows: [
+      { label: 'Description', value: transaction.description },
+      { label: 'Amount', value: money(amount) },
+      { label: 'Current balance', value: money(balance) },
+      { label: 'Reference', value: transaction.reference },
+    ],
+    sms: `${cfg.bankName || BANK.name}: ${money(amount)} credited to ${label}. Current balance ${money(balance)}. Ref ${transaction.reference}`,
+    meta: { transactionId: transaction.id, accountId: account.id, step: 'credited' },
+  }));
+
+  if (cfg.availableBalanceAlert === false) return out.filter(Boolean);
+
+  // 2. What can actually be spent.
+  //
+  // Both halves get said, because both are why this number differs from the
+  // balance: money on hold is not spendable yet, and an overdraft line is
+  // spendable but is not the customer's money. A figure larger than the
+  // balance with no explanation reads as a mistake.
+  const notes = [
+    held > 0 ? `${money(held)} is on hold and will be released as it clears` : '',
+    overdraft > 0 ? `this includes your ${money(overdraft)} overdraft line` : '',
+  ].filter(Boolean);
+
+  out.push(await notifyUser(user, 'balance_available', {
+    force: true,
+    subject: `Available balance - ${money(available)}`,
+    heading: 'Available balance',
+    intro: `${money(available)} is available to spend on ${label}${notes.length ? `. ${notes.join(', and ')}` : ''}.`,
+    rows: [
+      { label: 'Available to spend', value: money(available) },
+      { label: 'Current balance', value: money(balance) },
+      ...(held > 0 ? [{ label: 'On hold', value: money(held) }] : []),
+      ...(overdraft > 0 ? [{ label: 'Overdraft line included', value: money(overdraft) }] : []),
+    ],
+    sms: `${cfg.bankName || BANK.name}: Available to spend on ${label} is ${money(available)}${notes.length ? `. ${notes.join(', and ')}` : ''}.`,
+    meta: { transactionId: transaction.id, accountId: account.id, step: 'available' },
+  }));
+
+  return out.filter(Boolean);
 }
 
 /** Send the same alert to a list of customers (admin broadcast). */
@@ -188,6 +298,8 @@ async function unreadCount(userId) {
 }
 
 module.exports = {
+  smsText,
+  creditPosted,
   notifyUser,
   broadcast,
   unreadCount,

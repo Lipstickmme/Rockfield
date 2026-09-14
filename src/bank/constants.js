@@ -170,6 +170,10 @@ const DEFAULT_SETTINGS = {
   internationalPhone: '',
   mailingAddress: '',
   supportHours: '',
+  // Money arriving is announced twice: it has landed, then what can be spent.
+  // The second message exists because those are different numbers whenever
+  // any part of the balance is on hold. Off makes it one message.
+  availableBalanceAlert: true,
   announcement: '',
   announcementLevel: 'info',
   maintenanceMode: false,
@@ -238,6 +242,7 @@ const ALERT_TYPES = [
   { id: 'transfer_completed', group: 'Money movement', label: 'Transfer completed', default: true },
   { id: 'transfer_rejected', group: 'Money movement', label: 'Transfer returned or rejected', default: true, locked: true },
   { id: 'deposit_posted', group: 'Money movement', label: 'Deposit posted', default: true },
+  { id: 'balance_available', group: 'Money movement', label: 'Available balance after money arrives', default: true },
   { id: 'large_transaction', group: 'Money movement', label: 'Transaction over your alert threshold', default: true },
   { id: 'low_balance', group: 'Balances', label: 'Balance falls below your threshold', default: true },
   { id: 'overdraft', group: 'Balances', label: 'Overdraft or returned item', default: true, locked: true },

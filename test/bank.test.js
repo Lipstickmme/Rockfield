@@ -460,6 +460,72 @@ const dollars = (cents) => (cents / 100).toFixed(2);
       ok('one-time codes are returned to a laptop and withheld from a deployment');
     }
 
+    /* ---- 22. a credit tells the customer twice, and by text ---- */
+    {
+      // Money arriving raises two alerts, not one: it has landed, then what
+      // can actually be spent. Those are different numbers whenever any part
+      // of the balance is on hold or the account carries an overdraft line.
+      const http_ = require('http');
+      const texts = [];
+      const pingram = http_.createServer((req, res) => {
+        let body = '';
+        req.on('data', (c) => { body += c; });
+        req.on('end', () => {
+          texts.push({ auth: req.headers.authorization, ...JSON.parse(body) });
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end('{"id":"msg_test"}');
+        });
+      });
+      await new Promise((r) => pingram.listen(0, '127.0.0.1', r));
+      process.env.PINGRAM_API_KEY = 'pingram_sk_test';
+      process.env.PINGRAM_SMS_URL = `http://127.0.0.1:${pingram.address().port}/sms`;
+
+      const db_ = require(ROOT + '/src/bank/db').db;
+      const ledger_ = require(ROOT + '/src/bank/ledger');
+      const alerts_ = require(ROOT + '/src/bank/alerts');
+      const users_ = require(ROOT + '/src/bank/users');
+
+      const who = await users_.findByEmail('demo@rockfieldbank.com');
+      const acct = (await db_.accounts.find({ user_id: who.id })).find((a) => a.type === 'checking');
+      const before = (await db_.alerts.find({ user_id: who.id })).length;
+
+      const posted = await ledger_.post({
+        accountId: acct.id, direction: 'credit', amount: 250000,
+        description: 'WIRE IN - TEST', method: 'wire', status: 'posted', createdBy: 'admin',
+      });
+      const raised = await alerts_.creditPosted(who, {
+        account: posted.account, transaction: posted.transaction, amount: 250000,
+        balance: posted.account.balance, available: ledger_.availableFor(posted.account),
+      });
+
+      pingram.close();
+      delete process.env.PINGRAM_API_KEY;
+      delete process.env.PINGRAM_SMS_URL;
+
+      assert.strictEqual(raised.length, 2, 'two alerts, not one');
+      assert.strictEqual(raised[0].type, 'deposit_posted');
+      assert.strictEqual(raised[1].type, 'balance_available');
+      const after = (await db_.alerts.find({ user_id: who.id })).length;
+      assert.strictEqual(after, before + 2, 'both are stored, so they show in the app with no provider');
+
+      assert.strictEqual(texts.length, 2, 'and both go out as texts');
+      assert.strictEqual(texts[0].auth, 'Bearer pingram_sk_test');
+      assert.match(texts[0].to.number, /^\+1\d{10}$/, 'the number is normalised to E.164');
+      assert.match(texts[0].sms.message, /credited/i);
+      assert.match(texts[0].sms.message, /Current balance/i);
+      assert.match(texts[1].sms.message, /Available to spend/i);
+
+      // The available figure is larger than the balance here, because this
+      // account has an overdraft line. The message has to say so, or it reads
+      // as the bank inventing money.
+      const held = Number(posted.account.hold_amount || 0);
+      if (held > 0) assert.match(texts[1].sms.message, /on hold/i, 'a hold is named');
+      if (Number(posted.account.overdraft_limit || 0) > 0) {
+        assert.match(texts[1].sms.message, /overdraft/i, 'the overdraft line is named');
+      }
+      ok(`a credit raises two alerts and two texts: "${texts[1].sms.message.slice(0, 64)}..."`);
+    }
+
     console.log('\n  all banking tests passed');
   } catch (err) {
     failures += 1;
