@@ -1,6 +1,7 @@
 'use strict';
 
 const assert = require('assert');
+const fs = require('fs');
 const http = require('http');
 const mock = require('./mock-supabase');
 
@@ -321,6 +322,51 @@ async function withApp(env, fn) {
       }
     );
     sameEmail.close();
+
+    // Vercel resolves api/[...path].js for a single segment under /api and
+    // nothing deeper: anything further in reaches the edge router and 404s
+    // before Express sees it. That is why /api/health answered while every
+    // /api/bank/* route did not, and why the sign-in page reported a bare 404
+    // rather than any message this app would have written.
+    //
+    // The template carries one entry point per depth for its own routes. The
+    // bank's were missing. This walks the router and checks that every path it
+    // registers has a file that can answer it.
+    {
+      const routesOf = (router, prefix = '') => {
+        const out = [];
+        for (const layer of router.stack || []) {
+          if (layer.route) {
+            out.push(`${prefix}${layer.route.path}`);
+          } else if (layer.handle && layer.handle.stack) {
+            const source = layer.regexp && layer.regexp.source;
+            const m = source && source.match(/^\^\\\/((?:[\w-]|\\.)+)/);
+            out.push(...routesOf(layer.handle, `${prefix}${m ? `/${m[1].replace(/\\(.)/g, '$1')}` : ''}`));
+          }
+        }
+        return out;
+      };
+
+      const paths = routesOf(require(`${ROOT}/src/routes/bank`));
+      assert.ok(paths.length > 50, `expected the bank to register plenty of routes, got ${paths.length}`);
+
+      const missing = [];
+      const seen = new Set();
+      for (const route of paths) {
+        const depth = route.split('/').filter(Boolean).length;
+        if (seen.has(depth)) continue;
+        seen.add(depth);
+        // Depth 1 is /api/bank/x, which the root catch-all covers; deeper
+        // paths each need their own file under api/bank/.
+        const file = `${ROOT}/api/bank/${Array.from({ length: depth }, (_, i) => `[${String.fromCharCode(97 + i)}]`).join('/')}.js`;
+        if (!fs.existsSync(file)) missing.push({ depth, route, file: file.replace(`${ROOT}/`, '') });
+      }
+      assert.deepStrictEqual(
+        missing, [],
+        `bank routes with no Vercel entry point at their depth:\n${missing.map((m) => `  ${m.route} needs ${m.file}`).join('\n')}`
+      );
+      console.log(`  ok  all ${paths.length} bank routes have a Vercel entry point at their depth`);
+    }
 
     // And when the bank's tables are missing it says so rather than failing
     // silently, which is the whole point of the endpoint.

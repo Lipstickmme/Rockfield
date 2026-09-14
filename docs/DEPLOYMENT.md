@@ -463,6 +463,22 @@ to their dashboard.
 
 ## Troubleshooting
 
+**`/signin` says "Something went wrong (404)", or a request "did not reach the
+bank".** The request was answered before it got to this application. Every
+error the app raises carries a message, so a 404 with no message came from the
+host's router, not from here.
+
+On Vercel that means a path with no function file behind it. `api/[...path].js`
+resolves for **one** segment under `/api` and nothing deeper, so `/api/health`
+answers while `/api/bank/auth/login` does not. Each depth needs its own entry
+point, which is what the files under `api/bank/` are - four of them, because
+the deepest bank route is four segments
+(`/api/bank/accounts/:id/statements/:period`).
+
+`npm test` checks that every route the bank registers has one, and names the
+file to add if a new route goes deeper than the existing files reach.
+
+
 **I set `BANK_ADMIN_EMAIL` and `BANK_ADMIN_PASSWORD`, and cannot sign in.**
 Almost always because they were added *after* the first deploy. The bank seeds
 itself on its first request, and only while it has no accounts at all - it

@@ -126,7 +126,15 @@
         location.replace('/change-password');
         return new Promise(() => {});
       }
-      throw new ApiError((data && data.message) || `Something went wrong (${res.status}).`, res.status, data && data.error, data);
+      // A response with no JSON body did not come from this application -
+      // every error it raises carries a message. That means something in
+      // front of it answered: a CDN, a proxy, or a host whose router did not
+      // recognise the path. Say which request it was, because "something went
+      // wrong (404)" on a sign-in page sends people looking at their password.
+      const fallback = data && data.message
+        ? data.message
+        : `${method} ${url} did not reach the bank (${res.status}). The request was answered before it got here.`;
+      throw new ApiError(fallback, res.status, data && data.error, data);
     }
     return data;
   }
