@@ -95,14 +95,15 @@ function getSupabase() {
 
     /** Delete rows matching a PostgREST filter. */
     async remove(table, filter) {
+      // Ask for the deleted rows back so a caller can report how many went.
       const res = await fetch(`${base}/${table}?${filter}`, {
         method: 'DELETE',
-        headers: { ...headers, Prefer: 'return=minimal' },
+        headers: { ...headers, Prefer: 'return=representation' },
       });
       if (!res.ok) {
         throw new Error(`supabase delete ${table} failed: ${res.status} ${await res.text().catch(() => '')}`);
       }
-      return true;
+      return res.json().catch(() => []);
     },
 
     async select(table, query = '') {

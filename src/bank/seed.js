@@ -372,6 +372,57 @@ async function seedMessages(user) {
 
 /* ------------------------------------------------------------------ run --- */
 
+/**
+ * The id of the row that records a finished seed.
+ *
+ * A marker rather than a head count, because "there are some users" and "the
+ * bank was built" are not the same statement. A seed that dies part way -
+ * a timeout, a missing column, a network blip - leaves an administrator and
+ * nothing else, and a count-based guard reads that wreckage as success: the
+ * bank then refuses to seed again, for ever, with no customer, no account and
+ * no history. This row is only written once everything is in place.
+ */
+const SEED_MARKER = 'seed';
+
+/** Whether a previous seed ran all the way to the end. */
+async function seedComplete() {
+  try {
+    const row = await db.settings.findById(SEED_MARKER);
+    return Boolean(row && row.values && row.values.completedAt);
+  } catch (err) {
+    return false;
+  }
+}
+
+/** How far a bank that is not marked complete actually got. */
+async function seedState() {
+  const users = await db.users.count().catch(() => null);
+  if (users === null) return { users: null, state: 'unreadable' };
+  if (await seedComplete()) return { users, state: 'complete' };
+  if (users === 0) return { users, state: 'empty' };
+  // A finished seed leaves an administrator and two customers. Anything less
+  // than that without a marker is a seed that stopped half way.
+  return { users, state: users < 3 ? 'incomplete' : 'unmarked' };
+}
+
+/**
+ * Empty every one of the bank's own collections.
+ *
+ * Only ever called to clear a seed that never finished, and the caller checks
+ * that first. It touches nothing outside the bank - website enquiries, chat
+ * and the email inbox are in their own tables and are left alone.
+ */
+async function resetBank() {
+  const cleared = {};
+  for (const name of Object.keys(db)) {
+    const collection = db[name];
+    if (!collection || typeof collection.removeWhere !== 'function') continue;
+    // eslint-disable-next-line no-await-in-loop
+    cleared[name] = await collection.removeWhere({});
+  }
+  return cleared;
+}
+
 async function ensureSeed(options = {}) {
   const existing = await db.users.count();
   if (existing > 0 && !options.force) return { seeded: false, users: existing };
@@ -524,6 +575,14 @@ async function ensureSeed(options = {}) {
     actor: { id: admin.id, email: admin.email, role: 'admin' },
     detail: 'Initial data created',
     severity: 'notice',
+  });
+
+  // The last thing, on purpose: if anything above threw, this never runs and
+  // the bank is honestly reported as half built rather than quietly broken.
+  await db.settings.insert({
+    id: SEED_MARKER,
+    values: { completedAt: nowIso(), users: await db.users.count() },
+    updated_at: nowIso(),
   });
 
   console.log(`[rockfield] seeded: admin ${adminEmail}, customer ${demoEmail}`);
@@ -681,4 +740,8 @@ function ensureSeedOnce() {
   return seeding;
 }
 
-module.exports = { ensureSeed, ensureSeedOnce, reconcileAdmin, seedStatus, generateHistory, rng };
+module.exports = {
+  ensureSeed, ensureSeedOnce, reconcileAdmin, seedStatus,
+  seedComplete, seedState, resetBank,
+  generateHistory, rng,
+};

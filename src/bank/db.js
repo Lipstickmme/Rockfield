@@ -358,10 +358,35 @@ function createCollection(name) {
     });
   }
 
-  async function removeWhere(where) {
-    const rows = await find(where);
-    for (const row of rows) await remove(row.id);
-    return rows.length;
+  /**
+   * Delete every row matching a clause, in one request.
+   *
+   * Was a read followed by a delete per row - the same shape that made seeding
+   * time out. Clearing a bank with six months of history would have been
+   * several hundred sequential deletes.
+   *
+   * An empty clause means everything, but PostgREST refuses an unfiltered
+   * DELETE, sensibly. It goes as "every row that has an id", which is the same
+   * set and says so out loud. The count comes from the rows it returns.
+   */
+  async function removeWhere(where = {}) {
+    const supabase = getSupabase();
+    if (supabase) {
+      try {
+        const parts = toFilter(where);
+        const filter = parts.length ? parts.join('&') : 'id=not.is.null';
+        const rows = await supabase.remove(table, filter);
+        return Array.isArray(rows) ? rows.length : 0;
+      } catch (err) {
+        if (!/does not exist|42P01|PGRST205/i.test(err.message)) throw err;
+      }
+    }
+    return chain(name, async () => {
+      const rows = await readFile(name);
+      const keep = rows.filter((r) => !matches(r, where));
+      if (keep.length !== rows.length) await writeFile(name, keep);
+      return rows.length - keep.length;
+    });
   }
 
   async function count(where = {}) {

@@ -362,6 +362,24 @@ function start({ tables, port = 0, drop = [] }) {
       return json(res, 204);
     }
 
+    if (req.method === 'DELETE') {
+      // PostgREST refuses an unfiltered delete, and so does this: a mistyped
+      // filter that silently emptied a table would be a poor thing to learn
+      // about from a test suite rather than from the mock.
+      if (!filters.length) {
+        return fail(res, 400, 'PGRST109', 'DELETE requires a filter');
+      }
+      const doomed = table.rows.filter((row) => matches(row, filters) && canRead(name, row, who));
+      for (const row of doomed) {
+        if (!canWrite(name, row, who)) {
+          return fail(res, 403, '42501', `row violates row-level security policy for table "${name}"`);
+        }
+      }
+      table.rows = table.rows.filter((row) => !doomed.includes(row));
+      if (/return=representation/.test(prefer)) return json(res, 200, doomed.map(project));
+      return json(res, 204);
+    }
+
     return fail(res, 405, 'PGRST405', 'Method not allowed');
   });
 

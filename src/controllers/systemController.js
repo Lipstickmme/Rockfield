@@ -259,29 +259,63 @@ exports.health = async (req, res) => {
     );
   }
 
+  const seed = require('../bank/seed');
+  const state = bankTables === false ? { users: null, state: 'no tables' } : await seed.seedState();
+
+  if (state.state === 'incomplete') {
+    warnings.push(
+      `The bank has ${state.users} account(s) and no completed seed, which means seeding stopped part way and left an administrator with no customers, accounts or history. Open /api/health?seed=reset to clear it and build the bank properly.`
+    );
+  }
+
   let seedRun;
   if (req.query.seed) {
-    const before = await countUsers();
-    if (bankTables === false) {
-      seedRun = { ran: false, reason: 'the bank tables are missing; run supabase/migrations/0003_bank.sql' };
-    } else if (before === null) {
-      seedRun = { ran: false, reason: 'the bank tables are not readable; run supabase/migrations/0003_bank.sql' };
-    } else if (before > 0) {
-      seedRun = { ran: false, reason: `the bank already has ${before} account(s)`, users: before };
-    } else {
-      const startedAt = Date.now();
-      try {
-        const result = await require('../bank/seed').ensureSeed();
-        const admin = await require('../bank/seed').reconcileAdmin();
+    const wantsReset = String(req.query.seed).toLowerCase() === 'reset';
+    const startedAt = Date.now();
+
+    const build = async (cleared) => {
+      const result = await seed.ensureSeed();
+      const admin = await seed.reconcileAdmin();
+      return {
+        ran: true, ok: true, tookMs: Date.now() - startedAt, cleared,
+        users: await countUsers(), seeded: Boolean(result.seeded), admin: admin.reason || null,
+        note: 'Sign in at /signin with BANK_ADMIN_EMAIL and BANK_ADMIN_PASSWORD.',
+      };
+    };
+
+    try {
+      if (bankTables === false) {
+        seedRun = { ran: false, reason: 'the bank tables are missing; run supabase/migrations/0003_bank.sql' };
+      } else if (state.state === 'unreadable') {
+        seedRun = { ran: false, reason: 'the bank tables are not readable; run supabase/migrations/0003_bank.sql' };
+      } else if (wantsReset) {
+        // Only ever clears a seed that never finished. A bank carrying the
+        // completion marker has been built once and may since have had real
+        // customers registered against it, so this refuses rather than
+        // guessing - there is no undo for the other answer.
+        if (state.state === 'complete' || state.state === 'unmarked') {
+          seedRun = {
+            ran: false,
+            reason: `refusing to reset: this bank has ${state.users} account(s) and looks properly built. Reset only clears a seed that never finished.`,
+            users: state.users,
+          };
+        } else {
+          seedRun = await build(await seed.resetBank());
+        }
+      } else if (state.state === 'empty') {
+        seedRun = await build(null);
+      } else if (state.state === 'incomplete') {
         seedRun = {
-          ran: true, ok: true, tookMs: Date.now() - startedAt,
-          users: await countUsers(), admin: admin.reason || null,
-          note: 'Sign in with BANK_ADMIN_EMAIL and BANK_ADMIN_PASSWORD.',
+          ran: false,
+          users: state.users,
+          reason: `seeding stopped part way: ${state.users} account(s) and no completed seed. Open /api/health?seed=reset to clear the half-built bank and do it again.`,
         };
-      } catch (err) {
-        seedRun = { ran: true, ok: false, tookMs: Date.now() - startedAt, error: err.message };
-        warnings.push(`Seeding the bank failed: ${err.message}`);
+      } else {
+        seedRun = { ran: false, reason: `the bank is already built, with ${state.users} account(s)`, users: state.users };
       }
+    } catch (err) {
+      seedRun = { ran: true, ok: false, tookMs: Date.now() - startedAt, error: err.message };
+      warnings.push(`Seeding the bank failed: ${err.message}`);
     }
   }
 
@@ -326,6 +360,11 @@ exports.health = async (req, res) => {
       // and the bank has silently fallen back to ephemeral local files.
       tables: bankTables === null ? 'not using supabase' : bankTables,
       administrators: await administrators(),
+      // 'empty', 'incomplete', 'complete', or 'unmarked' for a bank seeded
+      // before the completion marker existed. Read again after a ?seed run, so
+      // the answer describes the bank as it is now rather than as it was when
+      // this request started.
+      seedState: seedRun && seedRun.ran ? (await seed.seedState()).state : state.state,
       // What this particular server process has seen. On a serverless host
       // each request may land on a different instance, so `attempted: false`
       // means "not in the process answering you", not "never anywhere" -

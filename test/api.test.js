@@ -230,6 +230,59 @@ async function withApp(env, fn) {
     );
     banking.close();
 
+    // A seed that dies part way used to be indistinguishable from a finished
+    // one: the guard asked whether any users existed, and an administrator
+    // with no customers, accounts or history answered yes. The bank then
+    // refused to seed again for ever.
+    const halfBuilt = await mock.start({});
+    await withApp(
+      {
+        SUPABASE_URL: `http://127.0.0.1:${halfBuilt.address().port}`,
+        SUPABASE_SERVICE_ROLE_KEY: mock.SERVICE_KEY,
+        SUPABASE_ANON_KEY: mock.ANON_KEY,
+        BANK_ADMIN_EMAIL: 'ops@rockfield.test',
+        BANK_ADMIN_PASSWORD: 'Quarry#Road2026',
+      },
+      async (base) => {
+        // Break the history write, which is how a serverless timeout shows up.
+        const ledger = require(ROOT + '/src/bank/ledger');
+        const real = ledger.postMany;
+        ledger.postMany = async () => { throw new Error('function timed out'); };
+        await require(ROOT + '/src/bank/seed').ensureSeed().catch(() => {});
+        ledger.postMany = real;
+
+        const stuck = await req(base, 'GET', '/api/health');
+        assert.strictEqual(stuck.body.bank.seedState, 'incomplete');
+        assert.ok(stuck.body.bank.users > 0 && stuck.body.bank.users < 3, 'a partial seed, not a whole one');
+        assert.ok(
+          stuck.body.warnings.some((w) => /stopped part way/.test(w)),
+          JSON.stringify(stuck.body.warnings)
+        );
+
+        // ?seed=1 will not paper over it, but says what to do.
+        const refused = await req(base, 'GET', '/api/health?seed=1');
+        assert.strictEqual(refused.body.bank.seedRun.ran, false);
+        assert.match(refused.body.bank.seedRun.reason, /seed=reset/);
+
+        // ?seed=reset clears the wreckage and builds it properly.
+        const rebuilt = await req(base, 'GET', '/api/health?seed=reset');
+        assert.strictEqual(rebuilt.body.bank.seedRun.ok, true, JSON.stringify(rebuilt.body.bank.seedRun));
+        assert.strictEqual(rebuilt.body.bank.seedState, 'complete');
+
+        const login = await req(base, 'POST', '/api/bank/auth/login', {
+          email: 'ops@rockfield.test', password: 'Quarry#Road2026',
+        });
+        assert.strictEqual(login.status, 200, JSON.stringify(login.body));
+
+        // And it refuses to touch a bank that is properly built.
+        const guard = await req(base, 'GET', '/api/health?seed=reset');
+        assert.strictEqual(guard.body.bank.seedRun.ran, false);
+        assert.match(guard.body.bank.seedRun.reason, /refusing to reset/);
+        console.log('  ok  a half-built bank is spotted, cleared and rebuilt; a finished one is refused');
+      }
+    );
+    halfBuilt.close();
+
     // And when the bank's tables are missing it says so rather than failing
     // silently, which is the whole point of the endpoint.
     const noTables = await mock.start({});

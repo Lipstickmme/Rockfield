@@ -493,6 +493,12 @@ If that does not do it, `/api/health` says what the server can actually see:
   happened, rather than leaving the reason in a function log. It only acts on a
   bank with no accounts, so it is safe to leave reachable and a no-op
   afterwards. Plain `/api/health` never seeds - it is a read.
+- `"seedState": "incomplete"` with one or two accounts - seeding stopped part
+  way and left an administrator with no customers, accounts or history. The
+  bank cannot fix this itself: its guard asks whether any accounts exist, and
+  half a bank answers yes. Open **`/api/health?seed=reset`**, which clears the
+  half-built bank and does it again. It refuses to touch a bank that finished
+  seeding, so it cannot be used on one with real customers in it.
 - `"tables": false` - Supabase is connected but `0003_bank.sql` has not been
   run. The storage layer falls back to local files when a table is missing, so
   the bank will appear to work and then forget everything the moment the
