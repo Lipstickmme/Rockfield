@@ -131,6 +131,9 @@ const ICONS = {
     fine: '<path d="M2.4 16.2h19.2M2.4 11.8h19.2"/>',
   },
   plus: { body: '<path d="M12 4.4v15.2M4.4 12h15.2"/>', fine: '' },
+  // Three ruled lines. The one icon in the set that is a convention rather
+  // than a drawing, because on a phone tab bar nothing else reads as "more".
+  menu: { body: '<path d="M3.4 6.6h17.2M3.4 12h17.2M3.4 17.4h17.2"/>', fine: '' },
   building: {
     body: '<path d="M3.2 20.6V6.1L12 3.3v17.3"/><path d="M12 9.4h8.8v11.2"/><path d="M1.8 20.6h20.4"/>',
     fine: '<path d="M6.3 8.3v1.8M6.3 12.7v1.8M6.3 17.1v1.8M9 7.4v1.8M9 11.8v1.8M9 16.2v1.8M15.6 12.4v1.8M15.6 16.8v1.8M18.2 12.4v1.8M18.2 16.8v1.8"/>',
@@ -258,6 +261,33 @@ function sidebar(active) {
 }
 
 /**
+ * The bottom bar, on a phone.
+ *
+ * The sidebar is a desktop object: a long list you read down. A phone banking
+ * app has four places you actually go and a way back to everything else, so
+ * that is what this is - the four, plus a Menu that opens the same drawer the
+ * burger does. It is hidden above the width where the sidebar is on screen.
+ *
+ * Menu takes the active mark for any screen the four do not cover, so the bar
+ * always says where you are rather than going blank on the ninth page.
+ */
+const TABS = [
+  { href: '/dashboard', label: 'Home', icon: 'home', key: 'dashboard' },
+  { href: '/accounts', label: 'Accounts', icon: 'accounts', key: 'accounts' },
+  { href: '/transfers', label: 'Transfer', icon: 'transfer', key: 'transfers' },
+  { href: '/cards', label: 'Cards', icon: 'card', key: 'cards' },
+];
+
+function tabbar(active) {
+  const onATab = TABS.some((tab) => tab.key === active);
+  const links = TABS.map((tab) => `
+        <a href="${tab.href}"${tab.key === active ? ' class="is-active" aria-current="page"' : ''}>${icon(tab.icon, 21)}<span>${tab.label}</span></a>`).join('');
+  return `      <nav class="rf-tabbar" id="rf-tabbar" aria-label="Sections">${links}
+        <button type="button" id="rf-tab-menu"${onATab ? '' : ' class="is-active"'} aria-controls="rf-side" aria-expanded="false">${icon('menu', 21)}<span>Menu</span></button>
+      </nav>`;
+}
+
+/**
  * The application shell: sidebar, sticky header, content.
  * `actions` is raw HTML for the right-hand side of the header.
  */
@@ -283,6 +313,7 @@ function appPage({ title, description, heading, sub, active, content, extraScrip
         <div class="rf-notice rf-hide" data-announcement></div>
 ${content}
       </main>
+${tabbar(active)}
     </div>
   </div>
   <div class="rf-toasts" id="rf-toasts"></div>`,
@@ -314,6 +345,13 @@ function authPage({ title, description, content, extraScripts = [] }) {
       </div>
     </section>
     <section class="rf-auth-panel">
+      <a class="rf-auth-brand" href="/" aria-label="${BANK.name} home">
+        <img src="/assets/bank/logomark-light.png" alt="" width="53" height="28" />
+        <span>
+          <strong>${BANK.name}</strong>
+          <small>Online banking</small>
+        </span>
+      </a>
 ${content}
     </section>
   </div>
@@ -442,4 +480,4 @@ function productCard(product) {
 const productGrid = (ids) =>
   `<div class="rf-grid cols-3">${(ids ? PRODUCTS.filter((p) => ids.includes(p.id)) : PRODUCTS).map(productCard).join('')}</div>`;
 
-module.exports = { head, scripts, appPage, authPage, marketingPage, marketingNav, marketingFooter, sidebar, icon, productCard, productGrid, NAV, BANK };
+module.exports = { head, scripts, appPage, authPage, tabbar, marketingPage, marketingNav, marketingFooter, sidebar, icon, productCard, productGrid, NAV, BANK };

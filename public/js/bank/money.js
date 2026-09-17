@@ -229,8 +229,8 @@
         <tr>
           <td class="rf-nowrap">${date(t.createdAt)}<span class="sub">${new Date(t.createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span></td>
           <td>${esc((t.recipient && (t.recipient.nickname || t.recipient.name)) || '&mdash;')}<span class="sub">${esc((t.recipient && (t.recipient.accountMasked || '')) || '')}</span></td>
-          <td class="rf-small">${esc(t.typeLabel)}</td>
-          <td class="rf-mono rf-small">${esc(t.confirmation)}</td>
+          <td class="rf-small opt">${esc(t.typeLabel)}</td>
+          <td class="rf-mono rf-small opt">${esc(t.confirmation)}</td>
           <td>${badge(t.status, t.statusLabel)}${t.reasonNote ? `<span class="sub">${esc(t.reasonNote)}</span>` : ''}</td>
           <td class="num rf-amt">${money(t.total)}</td>
           <td class="rf-right">
@@ -274,9 +274,9 @@
       tbody.innerHTML = data.beneficiaries.length ? data.beneficiaries.map((b) => `
         <tr>
           <td><strong>${esc(b.nickname || b.name)}</strong><span class="sub">${esc(b.name)}${b.relationship ? ` &middot; ${esc(b.relationship)}` : ''}</span></td>
-          <td class="rf-small">${esc(b.bankName || '&mdash;')}${b.swift ? `<span class="sub rf-mono">${esc(b.swift)}</span>` : ''}</td>
+          <td class="rf-small opt">${esc(b.bankName || '&mdash;')}${b.swift ? `<span class="sub rf-mono">${esc(b.swift)}</span>` : ''}</td>
           <td class="rf-mono rf-small">${esc(b.accountMask)}${b.routingNumber ? `<span class="sub">ABA ${esc(b.routingNumber)}</span>` : ''}</td>
-          <td class="rf-small">${esc(b.type.replace(/_/g, ' '))}</td>
+          <td class="rf-small opt">${esc(b.type.replace(/_/g, ' '))}</td>
           <td>${badge(b.status)}</td>
           <td class="rf-right rf-nowrap">
             <a class="rf-btn ghost sm" href="/transfers?type=${b.type === 'international_wire' ? 'wire_international' : b.type === 'domestic_wire' ? 'wire_domestic' : 'ach'}">Send</a>
@@ -329,11 +329,11 @@
       tbody.innerHTML = data.payees.length ? data.payees.map((p) => `
         <tr>
           <td><strong>${esc(p.name)}</strong></td>
-          <td class="rf-small">${esc(p.category)}</td>
-          <td class="rf-mono rf-small">${esc(p.accountMask || '&mdash;')}</td>
+          <td class="rf-small opt">${esc(p.category)}</td>
+          <td class="rf-mono rf-small opt">${esc(p.accountMask || '&mdash;')}</td>
           <td class="rf-small">${p.dueDay ? `Day ${p.dueDay}` : '&mdash;'}${p.lastPaidAt ? `<span class="sub">Last paid ${date(p.lastPaidAt)}</span>` : ''}</td>
           <td class="num">${money(p.amount)}</td>
-          <td>${p.autopay ? badge('ok', 'On') : badge('info', 'Off')}</td>
+          <td class="opt-sm">${p.autopay ? badge('ok', 'On') : badge('info', 'Off')}</td>
           <td class="rf-right rf-nowrap">
             <a class="rf-btn ghost sm" href="/transfers?type=bill_pay">Pay</a>
             <button class="rf-btn link sm" data-autopay="${esc(p.id)}" data-on="${p.autopay ? '1' : '0'}">${p.autopay ? 'Stop autopay' : 'Autopay'}</button>

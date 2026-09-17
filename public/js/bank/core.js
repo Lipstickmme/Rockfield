@@ -381,20 +381,26 @@
 
   function wireShell() {
     const side = qs('#rf-side');
-    const burger = qs('#rf-burger');
-    if (burger && side) {
-      burger.addEventListener('click', () => {
-        side.classList.toggle('is-open');
-        if (side.classList.contains('is-open')) {
+    // The header burger and the Menu tab at the foot of a phone screen open
+    // the same drawer. Two handles on one door, not two doors.
+    const openers = [qs('#rf-burger'), qs('#rf-tab-menu')].filter(Boolean);
+    if (side && openers.length) {
+      const setOpen = (open) => {
+        side.classList.toggle('is-open', open);
+        openers.forEach((btn) => btn.setAttribute('aria-expanded', String(open)));
+        const existing = qs('.rf-scrim');
+        if (open && !existing) {
           const scrim = document.createElement('div');
           scrim.className = 'rf-scrim';
-          scrim.addEventListener('click', () => { side.classList.remove('is-open'); scrim.remove(); });
+          scrim.addEventListener('click', () => setOpen(false));
           document.body.appendChild(scrim);
-        } else {
-          const scrim = qs('.rf-scrim');
-          if (scrim) scrim.remove();
+        } else if (!open && existing) {
+          existing.remove();
         }
-      });
+      };
+      openers.forEach((btn) => btn.addEventListener('click', () => setOpen(!side.classList.contains('is-open'))));
+      // A drawer with no way out but a tap on the scrim is a trap on a phone.
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setOpen(false); });
     }
 
     qsa('[data-signout]').forEach((btn) => btn.addEventListener('click', async () => {

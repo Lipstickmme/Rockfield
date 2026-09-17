@@ -23,10 +23,10 @@
         <strong>${esc(tx.description)}</strong>
         <span class="sub">${esc(tx.category)}${tx.memo ? ` &middot; ${esc(tx.memo)}` : ''}</span>
       </td>
-      ${showAccount ? `<td class="rf-nowrap rf-small">${esc(tx.accountName || '')}<span class="sub">&bull;&bull;${esc(tx.accountLast4 || '')}</span></td>` : ''}
+      ${showAccount ? `<td class="rf-nowrap rf-small opt">${esc(tx.accountName || '')}<span class="sub">&bull;&bull;${esc(tx.accountLast4 || '')}</span></td>` : ''}
       <td>${tx.status === 'posted' ? '' : badge(tx.status)}</td>
       <td class="num rf-amt ${tx.direction}">${signedMoney(tx.amount, tx.direction)}</td>
-      ${showBalance ? `<td class="num rf-muted">${tx.balanceAfter == null ? '&mdash;' : money(tx.balanceAfter)}</td>` : ''}
+      ${showBalance ? `<td class="num rf-muted opt">${tx.balanceAfter == null ? '&mdash;' : money(tx.balanceAfter)}</td>` : ''}
     </tr>`;
   }
 
@@ -147,7 +147,8 @@
     qs('[data-total="available"]').textContent = money(data.totals.available);
     qs('[data-total="owed"]').textContent = money(data.totals.owed);
     qs('[data-total="creditAvailable"]').textContent = money(data.totals.creditAvailable);
-    qs('[data-total-sub="deposits"]').textContent = `across ${data.accounts.filter((a) => !a.isCredit).length} account(s)`;
+    const deposits = data.accounts.filter((a) => !a.isCredit).length;
+    qs('[data-total-sub="deposits"]').textContent = `across ${deposits} ${deposits === 1 ? 'account' : 'accounts'}`;
     const owedSub = qs('[data-total-sub="owed"]');
     if (owedSub) owedSub.textContent = data.totals.owed ? 'due on your card' : 'nothing owed';
 
@@ -314,13 +315,13 @@
 
       tbody.innerHTML = data.transactions.length
         ? data.transactions.map((tx) => `<tr class="clickable" data-tx="${esc(tx.id)}">
-            <td class="rf-nowrap">${date(tx.date)}</td>
+            <td class="rf-nowrap">${date(tx.date, { month: 'short', day: 'numeric' })}<span class="sub">${new Date(tx.date).getFullYear()}</span></td>
             <td><strong>${esc(tx.description)}</strong>${tx.memo ? `<span class="sub">${esc(tx.memo)}</span>` : ''}</td>
-            <td class="rf-small">${esc(tx.category)}</td>
-            <td class="rf-small rf-nowrap">${esc(tx.accountName)}<span class="sub">&bull;&bull;${esc(tx.accountLast4)}</span></td>
+            <td class="rf-small opt">${esc(tx.category)}</td>
+            <td class="rf-small rf-nowrap opt">${esc(tx.accountName)}<span class="sub">&bull;&bull;${esc(tx.accountLast4)}</span></td>
             <td>${badge(tx.status)}</td>
             <td class="num rf-amt ${tx.direction}">${signedMoney(tx.amount, tx.direction)}</td>
-            <td class="num rf-muted">${tx.balanceAfter == null ? '&mdash;' : money(tx.balanceAfter)}</td>
+            <td class="num rf-muted opt">${tx.balanceAfter == null ? '&mdash;' : money(tx.balanceAfter)}</td>
           </tr>`).join('')
         : '<tr><td colspan="7" class="rf-center rf-muted">Nothing matches those filters.</td></tr>';
 
@@ -367,9 +368,9 @@
       tbody.innerHTML = data.statements.length
         ? data.statements.map((s) => `<tr>
             <td><strong>${esc(s.label)}</strong><span class="sub">${s.entries} entries</span></td>
-            <td class="num">${money(s.opening)}</td>
-            <td class="num rf-amt credit">${money(s.credits)}</td>
-            <td class="num">${money(s.debits)}</td>
+            <td class="num opt">${money(s.opening)}</td>
+            <td class="num rf-amt credit opt">${money(s.credits)}</td>
+            <td class="num opt">${money(s.debits)}</td>
             <td class="num"><strong>${money(s.closing)}</strong></td>
             <td class="rf-right"><button class="rf-btn ghost sm" data-open="${esc(s.periodStart.slice(0, 7))}">Open</button></td>
           </tr>`).join('')

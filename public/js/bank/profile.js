@@ -211,8 +211,8 @@
         <td class="rf-nowrap rf-small">${datetime(row.createdAt)}</td>
         <td><strong>${esc(row.detail || row.action)}</strong><span class="sub rf-mono">${esc(row.action)}</span></td>
         <td>${badge(row.severity === 'info' ? 'info' : row.severity, row.category)}</td>
-        <td class="rf-small">${esc(row.device || '&mdash;')}</td>
-        <td class="rf-small rf-mono">${esc(row.ip || '&mdash;')}</td>
+        <td class="rf-small opt">${esc(row.device || '&mdash;')}</td>
+        <td class="rf-small rf-mono opt">${esc(row.ip || '&mdash;')}</td>
       </tr>`).join('') : '<tr><td colspan="5" class="rf-center rf-muted">Nothing yet.</td></tr>';
   }
 

@@ -190,12 +190,19 @@
           </div>
           <div class="rf-table-wrap">
             <table class="rf-table">
-              <thead><tr><th>Date</th><th>Recipient</th><th>Type</th><th>Confirmation</th><th>Status</th><th class="num">Amount</th><th></th></tr></thead>
+              <thead><tr><th>Date</th><th>Recipient</th><th class="opt">Type</th><th class="opt">Confirmation</th><th>Status</th><th class="num">Amount</th><th></th></tr></thead>
               <tbody data-transfers><tr><td colspan="7" class="rf-center rf-muted">Loading&hellip;</td></tr></tbody>
             </table>
           </div>
         </section>
       </main>
+      <nav class="rf-tabbar" id="rf-tabbar" aria-label="Sections">
+        <a href="/dashboard"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="6" aria-hidden="true"><g stroke-width="1.6"><path d="M2.4 9.8 12 4.1l9.6 5.7"/><path d="M4.3 9.8v8.4M9.4 9.8v8.4M14.6 9.8v8.4M19.7 9.8v8.4"/><path d="M3.1 18.2h17.8"/><path d="M1.8 20.6h20.4"/></g><g stroke-width="0.95" opacity=".72"><path d="M6.85 11v6M12 11v6M17.15 11v6"/><path d="M4.3 9.8h15.4"/></g></svg><span>Home</span></a>
+        <a href="/accounts"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="6" aria-hidden="true"><g stroke-width="1.6"><path d="M4.4 4.6h12.9a2.7 2.7 0 0 1 2.7 2.7v12.1H7.1a2.7 2.7 0 0 1-2.7-2.7z"/><path d="M4.4 16.7A2.7 2.7 0 0 1 7.1 14h12.9"/></g><g stroke-width="0.95" opacity=".72"><path d="M8.2 8h8M8.2 11h5.4"/></g></svg><span>Accounts</span></a>
+        <a href="/transfers" class="is-active" aria-current="page"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="6" aria-hidden="true"><g stroke-width="1.6"><path d="M3.4 8.8h14.2"/><path d="M13.9 5.1 17.6 8.8l-3.7 3.7"/><path d="M20.6 15.2H6.4"/><path d="M10.1 11.5 6.4 15.2l3.7 3.7"/></g></svg><span>Transfer</span></a>
+        <a href="/cards"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="6" aria-hidden="true"><g stroke-width="1.6"><path d="M2.4 4.8h19.2v14.4H2.4z"/><path d="M2.4 9.4h19.2"/></g><g stroke-width="0.95" opacity=".72"><path d="M5.4 12.6h4.4v3.2H5.4z"/><path d="M13.6 15.8h5.2"/><path d="M5.4 14.2h4.4"/></g></svg><span>Cards</span></a>
+        <button type="button" id="rf-tab-menu" aria-controls="rf-side" aria-expanded="false"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="6" aria-hidden="true"><g stroke-width="1.6"><path d="M3.4 6.6h17.2M3.4 12h17.2M3.4 17.4h17.2"/></g></svg><span>Menu</span></button>
+      </nav>
     </div>
   </div>
   <div class="rf-toasts" id="rf-toasts"></div>

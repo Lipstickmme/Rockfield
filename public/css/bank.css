@@ -225,6 +225,9 @@ body.rf-site {
 .rf-burger span { display: block; width: 16px; height: 1.6px; background: var(--rf-ink); box-shadow: 0 5px 0 var(--rf-ink), 0 -5px 0 var(--rf-ink); }
 
 .rf-content { padding: 24px 26px 64px; flex: 1; }
+
+/* The bottom bar. Hidden until the sidebar goes away; see Responsive. */
+.rf-tabbar { display: none; }
 .rf-content.narrow { max-width: 940px; }
 
 /* ------------------------------------------------------------- surfaces -- */
@@ -248,6 +251,14 @@ body.rf-site {
   border-color: #cfdaeb;
 }
 .rf-card + .rf-card { margin-top: 16px; }
+/* ...but not where the container is already doing the spacing.
+
+   A grid or a flex row lays cards out side by side, and the margin above put
+   every card after the first 16px lower than the first - which then stretched
+   to the height of the row to cover the gap. The visible symptom was the
+   dashboard's four headline figures sitting on two different lines, the
+   leftmost floating above its neighbours. */
+:where(.rf-grid, .rf-row, .rf-stack, .rf-inline, .rf-spread) > .rf-card + .rf-card { margin-top: 0; }
 .rf-card-head {
   display: flex; align-items: center; gap: 12px;
   padding: 15px 18px; border-bottom: 1px solid var(--rf-line-2);
@@ -458,7 +469,11 @@ body.rf-site {
 .rf-table tbody tr.clickable:hover { background: var(--rf-surface-2); }
 .rf-table td.num, .rf-table th.num { text-align: right; font-family: var(--rf-mono); font-variant-numeric: tabular-nums; }
 .rf-table .sub { display: block; font-size: 12px; color: var(--rf-ink-3); }
-.rf-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+/* The wrapper is both the backstop - a table that still will not fit scrolls
+   rather than breaking the card - and, further down, the box the table asks
+   how much room it has. A table's problem is the width of its column, which
+   is not the width of the screen. */
+.rf-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; container: rf-table / inline-size; }
 
 .rf-list { list-style: none; margin: 0; padding: 0; }
 .rf-list li {
@@ -666,6 +681,28 @@ body.rf-site {
 .rf-auth-foot { font-size: 11.5px; color: #8093ad; line-height: 1.7; border-top: 1px solid rgba(255,255,255,.1); padding-top: 16px; }
 
 .rf-auth-panel { display: flex; align-items: center; justify-content: center; padding: 40px 24px; }
+
+/* The lockup, for the widths where the aside is not on screen to carry it.
+
+   Below 900px the left-hand panel is gone, and with it the only place the
+   bank's name and mark appeared: a customer arrived at a sign-in form with
+   nothing on the page saying whose it was. The mark is the light one on a
+   navy ground, which is the same file the application sidebar already loads
+   and works in either theme - the alternative, dark line work, disappears on
+   a dark page. */
+/* `a.` rather than `.`: the reset a few rules up sets every anchor inside
+   .rf-auth to `color: inherit`, which outranks a bare class and left the name
+   in ink on a navy ground - invisible. */
+a.rf-auth-brand {
+  display: none; align-items: center; gap: 12px;
+  width: 100%; max-width: 408px; margin: 0 0 20px;
+  padding: 14px 18px; border-radius: var(--rf-radius);
+  background: var(--rf-navy); color: #fff; text-decoration: none;
+  box-shadow: var(--rf-shadow);
+}
+.rf-auth-brand img { height: 30px; width: auto; flex: 0 0 auto; }
+.rf-auth-brand strong { display: block; font-family: var(--rf-display); font-size: 15px; letter-spacing: .01em; color: #fff; }
+.rf-auth-brand small { display: block; font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: #9db3d1; margin-top: 2px; }
 .rf-auth-box { width: 100%; max-width: 408px; }
 .rf-auth-box h1 { font-family: var(--rf-headline); font-weight: 600; font-size: 32px; letter-spacing: 0; margin: 0 0 6px; }
 .rf-auth-box .lede { color: var(--rf-ink-3); margin: 0 0 24px; font-size: 14.5px; }
@@ -915,15 +952,54 @@ body.rf-site {
 @media (max-width: 900px) {
   .rf-auth-wrap { grid-template-columns: minmax(0, 1fr); }
   .rf-auth-aside { display: none; }
+  /* The aside took the lockup with it, so the panel carries it instead. */
+  .rf-auth-panel { flex-direction: column; justify-content: flex-start; padding: 28px 20px 48px; }
+  a.rf-auth-brand { display: flex; }
+  .rf-auth-box h1 { font-size: 26px; }
   .rf-side {
     position: fixed; left: 0; top: 0; bottom: 0;
     transform: translateX(-100%); transition: transform .22s ease;
     box-shadow: var(--rf-shadow-lg);
   }
   .rf-side.is-open { transform: none; }
-  .rf-burger { display: flex; }
-  .rf-content { padding: 18px 16px 56px; }
+  /* The Menu tab opens the drawer now, so the header keeps its width for the
+     one thing a phone header is for: saying which screen you are on. */
+  .rf-burger { display: none; }
+  .rf-content { padding: 18px 16px calc(84px + env(safe-area-inset-bottom)); }
   .rf-top { padding: 11px 16px; }
+
+  /* The bottom bar.
+
+     Four places and a way back to the rest, thumb-height, over a pane of the
+     same glass as the header. It sits below the drawer and below the scrim,
+     so opening the menu covers it rather than leaving it floating over the
+     dimmed page. */
+  .rf-tabbar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 38;
+    display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
+    background: var(--rf-surface);
+    border-top: 1px solid var(--rf-line);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .rf-tabbar {
+      background: rgba(255, 255, 255, .94);
+      -webkit-backdrop-filter: var(--rf-glass-blur);
+      backdrop-filter: var(--rf-glass-blur);
+    }
+  }
+  .rf-tabbar a, .rf-tabbar button {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    padding: 9px 2px 10px; min-height: 56px;
+    border: 0; background: none; cursor: pointer;
+    color: var(--rf-ink-3); text-decoration: none;
+    font: 500 10.5px/1.1 var(--rf-sans); letter-spacing: .01em;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .rf-tabbar svg { opacity: .75; }
+  .rf-tabbar .is-active { color: var(--rf-navy-3); }
+  .rf-tabbar .is-active svg { opacity: 1; }
+  .rf-tabbar span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .rf-grid.cols-3, .rf-grid.cols-2 { grid-template-columns: minmax(0, 1fr); }
   .rf-row, .rf-row.three, .rf-row.four { grid-template-columns: minmax(0, 1fr); }
   .rf-statement-summary { grid-template-columns: repeat(2, 1fr); }
@@ -959,12 +1035,120 @@ body.rf-site {
 }
 
 @media (max-width: 620px) {
-  .rf-grid.cols-4 { grid-template-columns: minmax(0, 1fr); }
   .rf-statement { padding: 18px; }
   .rf-statement-head { flex-direction: column; gap: 14px; }
   .rf-footer .cols { grid-template-columns: minmax(0, 1fr); }
   .rf-modal-foot { flex-direction: column-reverse; }
   .rf-modal-foot .rf-btn { width: 100%; }
+
+  /* The header, at phone width.
+
+     The greeting and its sub-line were taking three lines of a 390px screen
+     and squeezing the buttons beside them. A phone header carries the name of
+     the screen; the sentence under it is desktop furniture. */
+  .rf-top { padding: 10px 14px; gap: 10px; }
+  .rf-top > div { min-width: 0; }
+  .rf-top h1 { font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rf-top .rf-top-sub { display: none; }
+  .rf-top-actions { gap: 6px; }
+
+  /* The headline figures.
+
+     Four cards down a single column spent 440px before the first account
+     appeared. The total leads, full width, because it is the number the app
+     was opened for; the rest tile two-up under it. */
+  .rf-grid.cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .rf-stat { padding: 13px 14px; }
+  .rf-stat .k { font-size: 10.5px; letter-spacing: .08em; }
+  .rf-stat .v { font-size: 20px; margin: 5px 0 1px; }
+  .rf-stat .d { font-size: 11.5px; }
+
+  [data-totals] > .rf-card:first-child,
+  [data-totals] > .rf-card:last-child { grid-column: 1 / -1; }
+  [data-totals] > .rf-card:first-child {
+    background: var(--rf-navy); border-color: var(--rf-navy); color: #fff; padding: 18px;
+  }
+  [data-totals] > .rf-card:first-child .k { color: #9db3d1; }
+  [data-totals] > .rf-card:first-child .v { font-size: 33px; margin: 7px 0 3px; }
+  [data-totals] > .rf-card:first-child .d { color: #a9bcd6; }
+
+  /* Account tiles: the balance is the point, so it keeps its size. */
+  .rf-acct { padding: 15px 16px; }
+  .rf-acct .meta { gap: 10px; flex-wrap: wrap; }
+
+  /* A section heading on a phone is a label, not a display line. */
+  .rf-content h2 { font-size: 16px; }
+
+  /* Safari zooms the whole page when a control it focuses is under 16px, and
+     the page never quite comes back. Nothing marks a web page out from an app
+     faster. */
+  .rf-input, .rf-select, .rf-textarea { font-size: 16px; }
+
+  /* The transaction filters: seven stacked fields put the first transaction
+     below the fold twice over. Search keeps the width it needs; the rest pair
+     off. */
+  .rf-app [data-filters] { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 10px; }
+  .rf-app [data-filters] > .rf-field:first-child,
+  .rf-app [data-filters] > .rf-inline { grid-column: 1 / -1; }
+  .rf-app [data-filters] .rf-btn { flex: 1 1 auto; justify-content: center; }
+
+  /* The header action duplicates a tab six inches lower. */
+  .rf-top-actions > .rf-btn { display: none; }
+
+  /* A label on the left and three buttons on the right is a desktop shape.
+     At this width the buttons were being squeezed into the label; let the pair
+     break onto two lines instead of fighting over one. */
+  .rf-spread { flex-wrap: wrap; }
+  .rf-card-head { flex-wrap: wrap; padding: 13px 15px; }
+}
+
+/* Tables, when the column they sit in is too narrow for them.
+
+   A seven-column table in 390px wraps every description onto four lines and
+   pushes the amount off the right edge, where nobody scrolls to find it. It
+   is not only a phone problem: the dashboard's activity table lives in two
+   thirds of the content column, so on a 1100px laptop it was already running
+   past the card and into the horizontal scroll that .rf-table-wrap keeps as a
+   backstop.
+
+   So the columns a phone can do without are marked `opt` in the markup, and
+   they leave as soon as the table is cramped rather than only on a phone.
+   What is left is what a banking app shows: what it was, when, how much.
+
+   The action buttons at the end of a row stop being a single nowrap line at
+   the same point - three ghost buttons side by side are the widest column on
+   half these tables. */
+@media (max-width: 1180px) {
+  .rf-table .opt { display: none; }
+  .rf-table td.rf-right { white-space: normal; }
+  .rf-table td.rf-right .rf-inline { justify-content: flex-end; }
+}
+
+/* And the same again where the screen is wide but the column is not: the
+   dashboard's activity table gets two thirds of the content width on any
+   monitor, and the bill payees table shares its row with a form. Asking the
+   viewport about either of those gets the wrong answer. */
+@container rf-table (max-width: 700px) {
+  .rf-table .opt { display: none; }
+  .rf-table td.rf-right { white-space: normal; }
+  .rf-table td.rf-right .rf-inline { justify-content: flex-end; }
+}
+
+@media (max-width: 720px) {
+  /* A second tier: the column that still leaves a trimmed table a couple of
+     dozen pixels too wide on a 360px phone, and only there. */
+  .rf-table .opt-sm { display: none; }
+  .rf-table { font-size: 12.8px; }
+  .rf-table th { padding: 8px; font-size: 10px; letter-spacing: .07em; }
+  .rf-table td { padding: 9px 8px; }
+  .rf-table td.num, .rf-table th.num { font-size: 12.5px; }
+  .rf-table .sub { font-size: 11px; }
+  .rf-table .rf-btn.sm { min-height: 30px; padding: 0 9px; font-size: 12px; }
+  /* The date is a column of its own on a wide screen and a stamp beside the
+     description on a narrow one. Stacking the year under the day keeps it to
+     about fifty pixels, which is the difference between the amount landing
+     inside the card and being pushed off its right edge. */
+  .rf-table td.rf-nowrap { line-height: 1.25; }
 }
 
 /* ==========================================================================
@@ -1001,6 +1185,11 @@ body.rf-site {
     --rf-shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 30px -18px rgba(0, 0, 0, .8);
   }
   :root:not([data-rf-theme="light"]) .rf-top { background: rgba(11, 15, 23, .82); }
+  :root:not([data-rf-theme="light"]) .rf-tabbar { background: var(--rf-surface); }
+  @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    :root:not([data-rf-theme="light"]) .rf-tabbar { background: rgba(11, 15, 23, .82); }
+  }
+  :root:not([data-rf-theme="light"]) .rf-tabbar .is-active { color: #7fa8d8; }
   /* The marketing nav keeps its white ground in the dark theme.
 
      The logo is black line work drawn on white; on a dark bar the artwork

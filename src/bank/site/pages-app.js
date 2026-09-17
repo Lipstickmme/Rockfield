@@ -182,8 +182,8 @@ const dashboardContent = `
               </div>
               <div class="rf-table-wrap">
                 <table class="rf-table">
-                  <thead><tr><th>Date</th><th>Description</th><th>Account</th><th class="num">Amount</th><th class="num">Balance</th></tr></thead>
-                  <tbody data-recent><tr><td colspan="5" class="rf-center rf-muted">Loading&hellip;</td></tr></tbody>
+                  <thead><tr><th>Date</th><th>Description</th><th class="opt">Account</th><th></th><th class="num">Amount</th><th class="num opt">Balance</th></tr></thead>
+                  <tbody data-recent><tr><td colspan="6" class="rf-center rf-muted">Loading&hellip;</td></tr></tbody>
                 </table>
               </div>
             </section>
@@ -256,7 +256,7 @@ const accountsContent = `
             <h4 class="rf-label">Latest entries</h4>
             <div class="rf-table-wrap">
               <table class="rf-table">
-                <thead><tr><th>Date</th><th>Description</th><th class="num">Amount</th><th class="num">Balance</th></tr></thead>
+                <thead><tr><th>Date</th><th>Description</th><th></th><th class="num">Amount</th><th class="num opt">Balance</th></tr></thead>
                 <tbody data-detail-transactions></tbody>
               </table>
             </div>
@@ -313,7 +313,7 @@ const transactionsContent = `
           </div>
           <div class="rf-table-wrap">
             <table class="rf-table">
-              <thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Account</th><th>Status</th><th class="num">Amount</th><th class="num">Balance</th></tr></thead>
+              <thead><tr><th>Date</th><th>Description</th><th class="opt">Category</th><th class="opt">Account</th><th>Status</th><th class="num">Amount</th><th class="num opt">Balance</th></tr></thead>
               <tbody data-rows><tr><td colspan="7" class="rf-center rf-muted">Loading&hellip;</td></tr></tbody>
             </table>
           </div>
@@ -428,7 +428,7 @@ const transfersContent = `
           </div>
           <div class="rf-table-wrap">
             <table class="rf-table">
-              <thead><tr><th>Date</th><th>Recipient</th><th>Type</th><th>Confirmation</th><th>Status</th><th class="num">Amount</th><th></th></tr></thead>
+              <thead><tr><th>Date</th><th>Recipient</th><th class="opt">Type</th><th class="opt">Confirmation</th><th>Status</th><th class="num">Amount</th><th></th></tr></thead>
               <tbody data-transfers><tr><td colspan="7" class="rf-center rf-muted">Loading&hellip;</td></tr></tbody>
             </table>
           </div>
@@ -445,7 +445,7 @@ const recipientsContent = `
             </div>
             <div class="rf-table-wrap">
               <table class="rf-table">
-                <thead><tr><th>Recipient</th><th>Bank</th><th>Account</th><th>Type</th><th>Status</th><th></th></tr></thead>
+                <thead><tr><th>Recipient</th><th class="opt">Bank</th><th>Account</th><th class="opt">Type</th><th>Status</th><th></th></tr></thead>
                 <tbody data-rows><tr><td colspan="6" class="rf-center rf-muted">Loading&hellip;</td></tr></tbody>
               </table>
             </div>
@@ -521,7 +521,7 @@ const billsContent = `
             <div class="rf-card-head"><h3>Payees</h3></div>
             <div class="rf-table-wrap">
               <table class="rf-table">
-                <thead><tr><th>Payee</th><th>Category</th><th>Account</th><th>Due</th><th class="num">Amount</th><th>Autopay</th><th></th></tr></thead>
+                <thead><tr><th>Payee</th><th class="opt">Category</th><th class="opt">Account</th><th>Due</th><th class="num">Amount</th><th class="opt-sm">Autopay</th><th></th></tr></thead>
                 <tbody data-rows><tr><td colspan="7" class="rf-center rf-muted">Loading&hellip;</td></tr></tbody>
               </table>
             </div>
@@ -648,7 +648,7 @@ const statementsContent = `
             <div class="rf-card-head"><h3>Statement periods</h3></div>
             <div class="rf-table-wrap">
               <table class="rf-table">
-                <thead><tr><th>Period</th><th class="num">Opening</th><th class="num">In</th><th class="num">Out</th><th class="num">Closing</th><th></th></tr></thead>
+                <thead><tr><th>Period</th><th class="num opt">Opening</th><th class="num opt">In</th><th class="num opt">Out</th><th class="num">Closing</th><th></th></tr></thead>
                 <tbody data-rows><tr><td colspan="6" class="rf-center rf-muted">Loading&hellip;</td></tr></tbody>
               </table>
             </div>
@@ -831,7 +831,7 @@ const activityContent = `
           <div class="rf-card-head"><h3>Account activity</h3><div class="rf-card-actions rf-small rf-muted">Everything done on your account, with the device and address it came from</div></div>
           <div class="rf-table-wrap">
             <table class="rf-table">
-              <thead><tr><th>When</th><th>What happened</th><th>Category</th><th>Device</th><th>IP address</th></tr></thead>
+              <thead><tr><th>When</th><th>What happened</th><th>Category</th><th class="opt">Device</th><th class="opt">IP address</th></tr></thead>
               <tbody data-rows><tr><td colspan="5" class="rf-center rf-muted">Loading&hellip;</td></tr></tbody>
             </table>
           </div>
