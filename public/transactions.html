@@ -110,14 +110,24 @@
                 <label for="f-direction">Direction</label>
                 <select class="rf-select" id="f-direction" name="direction"><option value="">Money in and out</option><option value="credit">Money in</option><option value="debit">Money out</option></select>
               </div>
-              <div class="rf-field" style="margin:0">
-                <label for="f-from">From</label>
-                <input class="rf-input" type="date" id="f-from" name="from" />
-              </div>
-              <div class="rf-field" style="margin:0">
-                <label for="f-to">To</label>
-                <input class="rf-input" type="date" id="f-to" name="to" />
-              </div>
+              <div class="rf-field rf-field-flush rf-field-date">
+                        <span class="rf-label" id="f-from-label">From</span>
+                        <div class="rf-dateparts" role="group" aria-labelledby="f-from-label" data-dateparts data-from="-10" data-to="0" data-order="desc">
+                          <select class="rf-select" data-part="month" aria-label="From: month"><option value="">Month</option><option value="01">Jan</option><option value="02">Feb</option><option value="03">Mar</option><option value="04">Apr</option><option value="05">May</option><option value="06">Jun</option><option value="07">Jul</option><option value="08">Aug</option><option value="09">Sep</option><option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option></select>
+                          <select class="rf-select" data-part="day" aria-label="From: day"><option value="">Day</option><option value="01">1</option><option value="02">2</option><option value="03">3</option><option value="04">4</option><option value="05">5</option><option value="06">6</option><option value="07">7</option><option value="08">8</option><option value="09">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option><option value="30">30</option><option value="31">31</option></select>
+                          <select class="rf-select" data-part="year" aria-label="From: year"><option value="">Year</option></select>
+                          <input type="hidden" id="f-from" name="from" data-part="value" />
+                        </div>
+                      </div>
+              <div class="rf-field rf-field-flush rf-field-date">
+                        <span class="rf-label" id="f-to-label">To</span>
+                        <div class="rf-dateparts" role="group" aria-labelledby="f-to-label" data-dateparts data-from="-10" data-to="0" data-order="desc">
+                          <select class="rf-select" data-part="month" aria-label="To: month"><option value="">Month</option><option value="01">Jan</option><option value="02">Feb</option><option value="03">Mar</option><option value="04">Apr</option><option value="05">May</option><option value="06">Jun</option><option value="07">Jul</option><option value="08">Aug</option><option value="09">Sep</option><option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option></select>
+                          <select class="rf-select" data-part="day" aria-label="To: day"><option value="">Day</option><option value="01">1</option><option value="02">2</option><option value="03">3</option><option value="04">4</option><option value="05">5</option><option value="06">6</option><option value="07">7</option><option value="08">8</option><option value="09">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option><option value="30">30</option><option value="31">31</option></select>
+                          <select class="rf-select" data-part="year" aria-label="To: year"><option value="">Year</option></select>
+                          <input type="hidden" id="f-to" name="to" data-part="value" />
+                        </div>
+                      </div>
               <div class="rf-field" style="margin:0">
                 <label for="f-status">Status</label>
                 <select class="rf-select" id="f-status" name="status"><option value="">Any status</option><option value="posted">Posted</option><option value="pending">Pending</option><option value="failed">Failed</option><option value="reversed">Reversed</option></select>

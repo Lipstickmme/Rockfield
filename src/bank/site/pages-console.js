@@ -9,7 +9,7 @@
  * between each step is what makes a console tiring to use.
  */
 
-const { appPage, icon } = require('./layout');
+const { appPage, icon, dateField } = require('./layout');
 const { BANK, PRODUCTS, US_STATES, CATEGORIES, TRANSACTION_METHODS, REJECTION_REASONS, DOCUMENT_KINDS } = require('../constants');
 
 const option = (value, label) => `<option value="${value}">${label || value}</option>`;
@@ -93,7 +93,7 @@ const content = `
                       <div class="rf-field"><label for="r-last">Last name</label><input class="rf-input" id="r-last" name="lastName" required /></div>
                     </div>
                     <div class="rf-row">
-                      <div class="rf-field"><label for="r-dob">Date of birth</label><input class="rf-input" type="date" id="r-dob" name="dateOfBirth" /></div>
+                      ${dateField({ id: 'r-dob', name: 'dateOfBirth', label: 'Date of birth', from: -110, to: -18 })}
                       <div class="rf-field"><label for="r-ssn">Social Security number</label><input class="rf-input mono" id="r-ssn" name="ssn" placeholder="000-00-0000" maxlength="11" /></div>
                     </div>
                     <div class="rf-row">
@@ -129,7 +129,7 @@ const content = `
                     </div>
                     <div class="rf-row">
                       <div class="rf-field"><label for="r-id-state">Issuing state</label><select class="rf-select" id="r-id-state" name="idState">${US_STATES.map((s) => option(s)).join('')}</select></div>
-                      <div class="rf-field"><label for="r-id-expires">Expires</label><input class="rf-input" type="date" id="r-id-expires" name="idExpires" /></div>
+                      ${dateField({ id: 'r-id-expires', name: 'idExpires', label: 'Expires', from: -5, to: 20, order: 'asc' })}
                     </div>
                     <div class="rf-row">
                       <div class="rf-field"><label for="r-employment">Employment</label><select class="rf-select" id="r-employment" name="employmentStatus">${['Employed', 'Self-employed', 'Retired', 'Student', 'Not employed'].map((e) => option(e)).join('')}</select></div>
@@ -336,8 +336,8 @@ const content = `
                 <input class="rf-input" name="q" placeholder="Search actions, detail, email, IP" style="max-width:320px" />
                 <select class="rf-select" name="category" style="width:auto"><option value="">Every category</option>${['security', 'money', 'account', 'admin'].map((c) => option(c)).join('')}</select>
                 <select class="rf-select" name="severity" style="width:auto"><option value="">Any severity</option>${['info', 'notice', 'warning', 'critical'].map((c) => option(c)).join('')}</select>
-                <input class="rf-input" type="date" name="from" style="width:auto" />
-                <input class="rf-input" type="date" name="to" style="width:auto" />
+                ${dateField({ id: 'al-from', name: 'from', label: 'From', from: -10, to: 0, wrapClass: 'rf-datefield' })}
+                ${dateField({ id: 'al-to', name: 'to', label: 'To', from: -10, to: 0, wrapClass: 'rf-datefield' })}
                 <button class="rf-btn sm" type="submit">Filter</button>
                 <a class="rf-btn ghost sm" href="/api/bank/admin/activity/export">Export CSV</a>
               </form>
@@ -460,7 +460,7 @@ const content = `
                   <div class="rf-field"><label for="ad-status">Status</label><select class="rf-select" id="ad-status" name="status"><option value="posted">Posted</option><option value="pending">Pending</option></select></div>
                 </div>
                 <div class="rf-row">
-                  <div class="rf-field"><label for="ad-date">Value date</label><input class="rf-input" type="date" id="ad-date" name="date" /></div>
+                  ${dateField({ id: 'ad-date', name: 'date', label: 'Value date', from: -10, to: 1 })}
                   <div class="rf-field"><label for="ad-merchant">Merchant or counterparty</label><input class="rf-input" id="ad-merchant" name="counterpartyName" /></div>
                 </div>
                 <div class="rf-row">

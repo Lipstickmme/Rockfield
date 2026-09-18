@@ -456,6 +456,51 @@ function marketingPage({ title, description, active, content, extraScripts = [],
   ].join('\n');
 }
 
+/* ------------------------------------------------------------- dates --- */
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+const MONTH_OPTIONS = MONTHS
+  .map((name, index) => `<option value="${String(index + 1).padStart(2, '0')}">${name}</option>`)
+  .join('');
+
+const DAY_OPTIONS = Array.from({ length: 31 }, (_, i) =>
+  `<option value="${String(i + 1).padStart(2, '0')}">${i + 1}</option>`).join('');
+
+/**
+ * A date, entered by picking its parts rather than hunting a calendar.
+ *
+ * A native date input opens a month grid, which is the right instrument for
+ * "a week on Thursday" and the wrong one for a date of birth: nobody pages
+ * back four hundred and twenty months to 1961. Three selects instead, with
+ * the year running backwards from the present, so the year is one scroll
+ * rather than a expedition. On a phone each one opens the system's own
+ * wheel; on a desktop it is a list you can type the first digits into.
+ *
+ * `from` and `to` are offsets in years from whatever year it is when the page
+ * is opened - not when it was built - because the list is filled in the
+ * browser. `order` puts the likeliest end first: 'desc' for anything in the
+ * past, 'asc' for anything ahead.
+ *
+ * The three selects carry no name. The hidden input does, and it holds the
+ * ISO date the server has always been sent, so nothing downstream of the form
+ * knows this changed.
+ */
+function dateField({ id, name, label, from = -110, to = 0, order = 'desc', hint = '', wrapClass = 'rf-field' }) {
+  // rf-field-date marks it out for the one thing three controls need that one
+  // does not: the full width of a narrow column.
+  return `<div class="${wrapClass} rf-field-date">
+                        <span class="rf-label" id="${id}-label">${label}</span>
+                        <div class="rf-dateparts" role="group" aria-labelledby="${id}-label" data-dateparts data-from="${from}" data-to="${to}" data-order="${order}">
+                          <select class="rf-select" data-part="month" aria-label="${label}: month"><option value="">Month</option>${MONTH_OPTIONS}</select>
+                          <select class="rf-select" data-part="day" aria-label="${label}: day"><option value="">Day</option>${DAY_OPTIONS}</select>
+                          <select class="rf-select" data-part="year" aria-label="${label}: year"><option value="">Year</option></select>
+                          <input type="hidden" id="${id}" name="${name}" data-part="value" />
+                        </div>${hint ? `
+                        <p class="hint">${hint}</p>` : ''}
+                      </div>`;
+}
+
 /* ----------------------------------------------------------- small parts --- */
 
 /** A product card, shared by the home page and the product pages. */
@@ -480,4 +525,4 @@ function productCard(product) {
 const productGrid = (ids) =>
   `<div class="rf-grid cols-3">${(ids ? PRODUCTS.filter((p) => ids.includes(p.id)) : PRODUCTS).map(productCard).join('')}</div>`;
 
-module.exports = { head, scripts, appPage, authPage, tabbar, marketingPage, marketingNav, marketingFooter, sidebar, icon, productCard, productGrid, NAV, BANK };
+module.exports = { head, scripts, appPage, authPage, tabbar, dateField, marketingPage, marketingNav, marketingFooter, sidebar, icon, productCard, productGrid, NAV, BANK };

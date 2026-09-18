@@ -241,6 +241,18 @@ const IGNORE = /fonts\.googleapis|fonts\.gstatic|ERR_CONNECTION_RESET|ERR_NAME_N
       await staff.fill('#r-last', 'Raman');
       await staff.fill('#r-email', `priya.${Date.now()}@example.com`);
       await staff.fill('#r-ssn', '445120987');
+      // The date of birth is three selects, not a calendar. Pick a leap day in
+      // a leap year, then move the year to one that has no 29 February: the
+      // day has to fall back rather than compose an impossible date.
+      const dob = '#r-dob-label + .rf-dateparts';
+      await staff.selectOption(`${dob} [data-part="month"]`, '02');
+      await staff.selectOption(`${dob} [data-part="year"]`, '1988');
+      await staff.selectOption(`${dob} [data-part="day"]`, '29');
+      assert.strictEqual(await staff.inputValue('#r-dob'), '1988-02-29', 'the parts compose an ISO date');
+      await staff.selectOption(`${dob} [data-part="year"]`, '1989');
+      assert.strictEqual(await staff.inputValue('#r-dob'), '1989-02-28', '29 February falls back in a year without one');
+      await staff.selectOption(`${dob} [data-part="year"]`, '1988');
+      await staff.selectOption(`${dob} [data-part="day"]`, '29');
       await staff.fill('#r-phone', '(614) 555-0150');
       await staff.fill('#r-addr1', '88 Quarry Lane');
       await staff.fill('#r-city', 'Columbus');
@@ -260,6 +272,11 @@ const IGNORE = /fonts\.googleapis|fonts\.gstatic|ERR_CONNECTION_RESET|ERR_NAME_N
       // Open their sheet and post an adjustment.
       await staff.click('[data-customers] tr[data-customer]:has-text("Priya Raman")');
       await staff.waitForSelector('[data-modal-body] [data-adjust]', { timeout: 20000 });
+      // The date picked from the three scrollers reached the record, which is
+      // the whole point of the hidden input sitting behind them.
+      const sheet = await staff.textContent('[data-modal-body]');
+      assert.match(sheet, /1988-02-29/, 'the date of birth picked without a calendar is on the record');
+      ok('the date of birth composes, clamps to a real day, and reaches the customer');
       await staff.click('[data-modal-body] [data-adjust]');
       await staff.waitForSelector('[data-adjust-modal]:not(.rf-hide)', { timeout: 10000 });
       await staff.fill('#ad-amount', '1500.00');

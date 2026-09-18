@@ -9,7 +9,7 @@
  * thing can exist, which is what the scripts look for.
  */
 
-const { appPage, authPage, icon } = require('./layout');
+const { appPage, authPage, icon, dateField } = require('./layout');
 const { BANK, US_STATES, CATEGORIES, SECURITY_QUESTIONS, DOCUMENT_KINDS } = require('../constants');
 
 const option = (value, label) => `<option value="${value}">${label || value}</option>`;
@@ -285,14 +285,8 @@ const transactionsContent = `
                 <label for="f-direction">Direction</label>
                 <select class="rf-select" id="f-direction" name="direction"><option value="">Money in and out</option><option value="credit">Money in</option><option value="debit">Money out</option></select>
               </div>
-              <div class="rf-field" style="margin:0">
-                <label for="f-from">From</label>
-                <input class="rf-input" type="date" id="f-from" name="from" />
-              </div>
-              <div class="rf-field" style="margin:0">
-                <label for="f-to">To</label>
-                <input class="rf-input" type="date" id="f-to" name="to" />
-              </div>
+              ${dateField({ id: 'f-from', name: 'from', label: 'From', from: -10, to: 0, wrapClass: 'rf-field rf-field-flush' })}
+              ${dateField({ id: 'f-to', name: 'to', label: 'To', from: -10, to: 0, wrapClass: 'rf-field rf-field-flush' })}
               <div class="rf-field" style="margin:0">
                 <label for="f-status">Status</label>
                 <select class="rf-select" id="f-status" name="status"><option value="">Any status</option><option value="posted">Posted</option><option value="pending">Pending</option><option value="failed">Failed</option><option value="reversed">Reversed</option></select>
@@ -364,11 +358,7 @@ const transfersContent = `
                     <label for="t-amount">Amount</label>
                     <input class="rf-input money" id="t-amount" name="amount" inputmode="decimal" placeholder="0.00" required />
                   </div>
-                  <div class="rf-field">
-                    <label for="t-date">Send on</label>
-                    <input class="rf-input" type="date" id="t-date" name="scheduledFor" />
-                    <div class="hint">Leave blank to send now.</div>
-                  </div>
+                  ${dateField({ id: 't-date', name: 'scheduledFor', label: 'Send on', from: 0, to: 3, order: 'asc', hint: 'Leave blank to send now.' })}
                 </div>
 
                 <div class="rf-row">

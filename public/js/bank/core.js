@@ -261,6 +261,154 @@
     });
   }
 
+  /* ----------------------------------------------------------- dates -- */
+
+  /** How many days that month actually had. Leap years included. */
+  function daysInMonth(month, year) {
+    if (!month) return 31;
+    if (!year) return month === 2 ? 29 : [4, 6, 9, 11].indexOf(month) >= 0 ? 30 : 31;
+    return new Date(year, month, 0).getDate();
+  }
+
+  /**
+   * The month / day / year control that stands in for a calendar.
+   *
+   * The years are filled here rather than at build time so the list is right
+   * on the day somebody uses it, not on the day the page was deployed. The
+   * three selects carry no name; the hidden input beside them does, and gets
+   * the ISO date, so every form handler behind this is untouched.
+   */
+  function wireDateParts(root) {
+    qsa('[data-dateparts]', root || document).forEach((group) => {
+      if (group.dataset.wired) return;
+      group.dataset.wired = '1';
+
+      const month = qs('[data-part="month"]', group);
+      const day = qs('[data-part="day"]', group);
+      const year = qs('[data-part="year"]', group);
+      const value = qs('[data-part="value"]', group);
+      if (!month || !day || !year || !value) return;
+
+      const now = new Date().getFullYear();
+      const first = now + Number(group.dataset.from || -110);
+      const last = now + Number(group.dataset.to || 0);
+      const years = [];
+      for (let y = last; y >= first; y -= 1) years.push(y);
+      if (group.dataset.order === 'asc') years.reverse();
+      year.insertAdjacentHTML('beforeend', years.map((y) => `<option value="${y}">${y}</option>`).join(''));
+
+      /* A day that the chosen month does not have cannot be picked, and one
+         already chosen is pulled back to the last day there is - so switching
+         from 31 March to February leaves the 28th, not an invalid date. */
+      function clampDays() {
+        const count = daysInMonth(Number(month.value), Number(year.value));
+        Array.from(day.options).forEach((opt) => {
+          if (!opt.value) return;
+          const gone = Number(opt.value) > count;
+          opt.disabled = gone;
+          opt.hidden = gone;
+        });
+        if (day.value && Number(day.value) > count) day.value = String(count).padStart(2, '0');
+      }
+
+      function compose() {
+        clampDays();
+        value.value = month.value && day.value && year.value
+          ? `${year.value}-${month.value}-${day.value}`
+          : '';
+      }
+
+      // A value put there by the server splits back into the three parts.
+      if (/^\d{4}-\d{2}-\d{2}$/.test(value.value)) {
+        const [y, m, d] = value.value.split('-');
+        year.value = y;
+        month.value = m;
+        clampDays();
+        day.value = d;
+      }
+
+      [month, day, year].forEach((el) => el.addEventListener('change', compose));
+      const form = group.closest('form');
+      // A reset clears the selects; the composed value has to follow, and it
+      // only can once the browser has finished resetting them.
+      if (form) form.addEventListener('reset', () => setTimeout(compose, 0));
+      compose();
+    });
+  }
+
+  /* ------------------------------------------------------- fit to box -- */
+
+  /**
+   * Shrink a figure until it fits the box it is in.
+   *
+   * A balance is set in display type at a size chosen for a balance: five or
+   * six digits and a decimal. Eight digits in a two-up tile on a phone runs
+   * off the end of the card, and the cents - the part somebody is squinting
+   * at - are what falls off. Wrapping is not an option either: "$22,198," on
+   * one line and "030.77" on the next is worse than too small.
+   *
+   * So the type gives way instead. One measurement tells us the ratio it has
+   * to come down by; a couple of correction steps settle the rest, because
+   * the fonts have their own metrics and a straight ratio overshoots.
+   */
+  const FIT = '.rf-stat .v, .rf-acct .bal, .rf-statement-summary .v, [data-fit]';
+  const MIN_FIT = 13;
+  let fitting = false;
+
+  function fitOne(el) {
+    // Back to whatever the stylesheet asks for, or every pass would ratchet
+    // the size down a little further and never come back up.
+    el.style.fontSize = '';
+    const base = parseFloat(getComputedStyle(el).fontSize) || 0;
+    if (!base || el.scrollWidth <= el.clientWidth + 1) return;
+
+    const floor = Math.max(MIN_FIT, base * 0.55);
+    let size = Math.max(floor, (base * el.clientWidth) / el.scrollWidth);
+    el.style.fontSize = `${size.toFixed(2)}px`;
+    for (let step = 0; step < 6 && size > floor && el.scrollWidth > el.clientWidth + 1; step += 1) {
+      size = Math.max(floor, size - Math.max(0.5, size * 0.04));
+      el.style.fontSize = `${size.toFixed(2)}px`;
+    }
+  }
+
+  /** Fit every figure under `root`. Safe to call as often as you like. */
+  function fit(root = document) {
+    if (fitting) return;
+    fitting = true;
+    try {
+      qsa(FIT, root).forEach(fitOne);
+    } finally {
+      fitting = false;
+    }
+  }
+
+  /**
+   * Re-fit whenever the numbers change or the box does.
+   *
+   * The page scripts write these figures from a dozen places, and adding a
+   * call to each one is a list that goes stale the first time somebody adds a
+   * screen. Watching the content instead catches all of them, now and later.
+   * Only childList and characterData are observed - never attributes - so the
+   * font size this sets cannot feed back into the observer.
+   */
+  function watchFit() {
+    // Only the application and the console carry figures like this; the
+    // marketing pages do not, and do not load this at all on most of them.
+    if (!qs('#rf-content')) return;
+    let queued = null;
+    const soon = () => {
+      clearTimeout(queued);
+      queued = setTimeout(() => fit(document), 60);
+    };
+    // The body rather than the content column, because a customer sheet or a
+    // statement opens in a modal hung off the body, and a balance is a balance
+    // wherever it is shown.
+    new MutationObserver(soon).observe(document.body, { childList: true, characterData: true, subtree: true });
+    window.addEventListener('resize', soon);
+    window.addEventListener('orientationchange', soon);
+    soon();
+  }
+
   /* ------------------------------------------------------------- charts -- */
 
   /** A donut, as inline SVG. Data is [{ label, amount, color }]. */
@@ -428,6 +576,8 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     wireShell();
+    wireDateParts();
+    watchFit();
     booted = bootstrap().then((session) => {
       readyQueue.splice(0).forEach((fn) => {
         try {
@@ -464,6 +614,8 @@
     modal,
     readFile,
     donut,
+    fit,
+    wireDateParts,
     CHART_COLORS,
     ready,
     state,

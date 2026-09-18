@@ -282,7 +282,11 @@ body.rf-site {
 
 .rf-stat { padding: 16px 18px; }
 .rf-stat .k { font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--rf-ink-3); font-weight: 600; }
-.rf-stat .v { font-family: var(--rf-display); font-size: 25px; letter-spacing: 0; margin: 6px 0 2px; font-variant-numeric: tabular-nums; }
+/* nowrap, so that a figure too long for its tile overflows and /js/bank/core.js
+   can see it and bring the type down. Left to wrap, "$22,198," would sit on
+   one line and "030.77" on the next, and nothing would look wrong enough to
+   measure. */
+.rf-stat .v { font-family: var(--rf-display); font-size: 25px; letter-spacing: 0; margin: 6px 0 2px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .rf-stat .d { font-size: 12.5px; color: var(--rf-ink-3); }
 .rf-stat .d.up { color: var(--rf-credit); }
 .rf-stat .d.down { color: var(--rf-debit); }
@@ -428,6 +432,27 @@ body.rf-site {
 .rf-input[readonly] { background: var(--rf-surface-3); color: var(--rf-ink-2); }
 .rf-textarea { min-height: 96px; resize: vertical; }
 .rf-input.mono, .rf-select.mono { font-family: var(--rf-mono); letter-spacing: .02em; }
+
+/* A date, as three lists instead of a calendar.
+
+   The year takes the most room of the three because it is the one somebody
+   scrolls; the day the least, because it is two digits. Each select keeps the
+   browser's own control, which on a phone means the system wheel picker and
+   on a desktop a list you can type the first characters into - both better at
+   1961 than a month grid is. */
+.rf-dateparts { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .78fr) minmax(0, 1.05fr); gap: 8px; }
+.rf-dateparts .rf-select { min-width: 0; padding-left: 10px; padding-right: 6px; }
+
+/* Wherever a date sits in a filter bar rather than a form, the label goes
+   beside it: a stack of label-over-control in a row of bare inputs reads as a
+   different kind of thing, which it is not. */
+.rf-datefield { display: flex; align-items: center; gap: 8px; }
+.rf-datefield .rf-label { margin: 0; font-size: 12.5px; color: var(--rf-ink-3); white-space: nowrap; }
+.rf-datefield .rf-dateparts { grid-template-columns: repeat(3, auto); }
+.rf-datefield .rf-select { width: auto; }
+
+/* A field in a row that sets its own spacing. */
+.rf-field-flush { margin-bottom: 0; }
 .rf-input.money { font-family: var(--rf-mono); font-size: 17px; }
 
 .rf-row { display: grid; gap: 14px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -501,7 +526,7 @@ body.rf-site {
 .rf-acct .top { display: flex; align-items: center; gap: 9px; margin-bottom: 10px; }
 .rf-acct .top strong { font-size: 14px; }
 .rf-acct .no { font-family: var(--rf-mono); font-size: 12px; color: var(--rf-ink-3); }
-.rf-acct .bal { font-family: var(--rf-display); font-size: 23px; letter-spacing: 0; font-variant-numeric: tabular-nums; }
+.rf-acct .bal { font-family: var(--rf-display); font-size: 23px; letter-spacing: 0; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .rf-acct .meta { display: flex; gap: 14px; margin-top: 8px; font-size: 12px; color: var(--rf-ink-3); }
 .rf-acct.credit .bal { color: var(--rf-debit); }
 
@@ -928,7 +953,7 @@ a.rf-auth-brand {
 .rf-statement-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px; }
 .rf-statement-summary .box { background: var(--rf-surface-2); border: 1px solid var(--rf-line-2); border-radius: var(--rf-radius-sm); padding: 12px 14px; }
 .rf-statement-summary .k { font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--rf-ink-3); }
-.rf-statement-summary .v { font-family: var(--rf-mono); font-size: 16px; font-weight: 500; }
+.rf-statement-summary .v { font-family: var(--rf-mono); font-size: 16px; font-weight: 500; white-space: nowrap; }
 
 @media print {
   .rf-side, .rf-top, .rf-toasts, .rf-no-print { display: none !important; }
@@ -1089,7 +1114,10 @@ a.rf-auth-brand {
      off. */
   .rf-app [data-filters] { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 10px; }
   .rf-app [data-filters] > .rf-field:first-child,
-  .rf-app [data-filters] > .rf-inline { grid-column: 1 / -1; }
+  .rf-app [data-filters] > .rf-inline,
+  /* Three selects in half a column leaves each one too narrow to read its own
+     placeholder: "M...", "", "Ye...". A date takes the full width. */
+  .rf-app [data-filters] > .rf-field-date { grid-column: 1 / -1; }
   .rf-app [data-filters] .rf-btn { flex: 1 1 auto; justify-content: center; }
 
   /* The header action duplicates a tab six inches lower. */
