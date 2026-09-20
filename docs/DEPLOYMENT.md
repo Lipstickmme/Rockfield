@@ -262,6 +262,19 @@ While you are there, set the first administrator:
 | `BANK_ALERT_FROM` | `Rockfield National Bank <alerts@yourdomain.com>` |
 | `PUBLIC_BASE_URL` | `https://yourdomain.com`, for links inside alert emails |
 
+**`PUBLIC_BASE_URL` has to be saved as plain text, not Sensitive.** Vercel reads
+the `PUBLIC_` prefix as a framework's public prefix - the one Astro, Nuxt and
+SvelteKit inline into the browser bundle - and refuses to mark such a variable
+secret, since a secret inlined into a bundle is not one:
+
+> Environment variables with a public framework prefix cannot use
+> `visibility: secret`. Use `visibility: config` instead.
+
+Plain text is the right setting anyway. It is your domain name, which is on
+every page already. Every other variable on this page is genuinely secret and
+should be marked Sensitive: the encryption key, the admin password, the
+service-role key, the Resend and Pingram keys.
+
 The bank seeds itself on the first request against an empty database: the
 administrator above, a demonstration customer and six months of history. Sign
 in at `/console`, and **delete the demonstration customers before using this
