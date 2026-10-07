@@ -22,8 +22,8 @@ npm start        # http://localhost:3000
 
 | | |
 |---|---|
-| Customer sign-in | `/signin` — `demo@rockfieldbank.com` / `Bedrock#Demo2026` |
-| Staff console | `/console` — `admin@rockfieldbank.com` / `Rockfield#Admin2026` |
+| Customer sign-in | `/signin` — `demo@rockfieldglobalfinance.com` / `Bedrock#Demo2026` |
+| Staff console | `/console` — `admin@rockfieldglobalfinance.com` / `Rockfield#Admin2026` |
 | Client services desk | `/admin` — website enquiries, chat and mail (Supabase auth) |
 
 The sign-in page carries both demonstration logins as buttons, so nothing needs

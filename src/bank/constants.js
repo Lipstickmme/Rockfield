@@ -24,8 +24,8 @@ const BANK = {
   swift: 'RKFDUS44XXX',
   fdicCert: '58412',
   nmls: '409127',
-  email: 'support@rockfieldbank.com',
-  securityEmail: 'security@rockfieldbank.com',
+  email: 'support@rockfieldglobalfinance.com',
+  securityEmail: 'security@rockfieldglobalfinance.com',
   established: 1924,
 };
 

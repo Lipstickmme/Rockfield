@@ -21,7 +21,7 @@ const YEAR = new Date().getFullYear();
  */
 function socialImage() {
   const base = process.env.PUBLIC_BASE_URL
-    || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://rockfieldbank.com');
+    || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://rockfieldglobalfinance.com');
   return `${base.replace(/\/+$/, '')}/assets/bank/og-image.png`;
 }
 

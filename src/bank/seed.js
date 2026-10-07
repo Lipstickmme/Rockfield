@@ -427,7 +427,7 @@ async function ensureSeed(options = {}) {
   const existing = await db.users.count();
   if (existing > 0 && !options.force) return { seeded: false, users: existing };
 
-  const adminEmail = process.env.BANK_ADMIN_EMAIL || 'admin@rockfieldbank.com';
+  const adminEmail = process.env.BANK_ADMIN_EMAIL || 'admin@rockfieldglobalfinance.com';
   const adminPassword = process.env.BANK_ADMIN_PASSWORD || 'Rockfield#Admin2026';
   const { user: admin } = await users.createUser({
     email: adminEmail,
@@ -460,7 +460,7 @@ async function ensureSeed(options = {}) {
   // The administrator keeps the address that was asked for, because that is
   // the one somebody signs in with. The customer gets the built-in one, and
   // the clash is reported rather than silently worked around.
-  const DEFAULT_DEMO_EMAIL = 'demo@rockfieldbank.com';
+  const DEFAULT_DEMO_EMAIL = 'demo@rockfieldglobalfinance.com';
   const requestedDemoEmail = process.env.BANK_DEMO_EMAIL || DEFAULT_DEMO_EMAIL;
   const demoClashesWithAdmin = requestedDemoEmail.trim().toLowerCase() === adminEmail.trim().toLowerCase();
   if (demoClashesWithAdmin) {
