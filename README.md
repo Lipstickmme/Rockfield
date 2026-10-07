@@ -277,7 +277,7 @@ public demonstration.
 | `PINGRAM_SMS_FROM` | The sending number, in E.164 |
 | `PINGRAM_DEFAULT_COUNTRY` | Country code assumed for a ten-digit number (`1`) |
 | `PINGRAM_SMS_URL` | Override for Pingram's send endpoint |
-| `PUBLIC_BASE_URL` | Absolute base for links inside emails |
+| `PUBLIC_BASE_URL` | Absolute base for links inside emails (or `BANK_BASE_URL` / `APP_URL`) |
 | `BANK_RATE_LIMIT_MAX` | Requests per minute per IP against `/api/bank` (300) |
 | `BANK_LOGIN_RATE_LIMIT` | Sign-in attempts per five minutes (20) |
 | `BANK_COOKIE_INSECURE` | `1` when serving over plain HTTP locally |

@@ -21,6 +21,7 @@ const settingsLib = require('../../bank/settings');
 const contact = require('../../bank/contact');
 const alerts = require('../../bank/alerts');
 const audit = require('../../bank/audit');
+const { baseUrl } = require('../../utils/config');
 const profile = require('./profileController');
 const accountsController = require('./accountsController');
 const money_ = require('./moneyController');
@@ -275,7 +276,7 @@ const createCustomer = asyncHandler(async (req, res) => {
     body: temporaryPassword
       ? 'Sign in with the temporary password above. You will be asked to choose your own the first time.'
       : 'Sign in with the password you chose with us today.',
-    cta: { label: 'Sign in', href: `${process.env.PUBLIC_BASE_URL || ''}/signin` },
+    cta: { label: 'Sign in', href: `${baseUrl()}/signin` },
   });
 
   res.status(201).json({
@@ -991,7 +992,7 @@ const replyToMessage = asyncHandler(async (req, res) => {
       subject: `New secure message: ${first.subject}`,
       heading: 'You have a new secure message',
       intro: body.slice(0, 240),
-      cta: { label: 'Read it in online banking', href: `${process.env.PUBLIC_BASE_URL || ''}/messages` },
+      cta: { label: 'Read it in online banking', href: `${baseUrl()}/messages` },
     });
   }
   await audit.log({

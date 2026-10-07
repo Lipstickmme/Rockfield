@@ -16,13 +16,9 @@ const YEAR = new Date().getFullYear();
 /**
  * Absolute URL for the link card. Scrapers do not resolve a relative path
  * against the page they fetched, so `/assets/...` shows up blank everywhere.
- * PUBLIC_BASE_URL is the domain when it is set; a Vercel deployment otherwise
- * knows its own hostname.
  */
 function socialImage() {
-  const base = process.env.PUBLIC_BASE_URL
-    || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://rockfieldglobalfinance.com');
-  return `${base.replace(/\/+$/, '')}/assets/bank/og-image.png`;
+  return `${require('../../utils/config').baseUrl()}/assets/bank/og-image.png`;
 }
 
 /* ---------------------------------------------------------------- icons --- */

@@ -589,9 +589,7 @@ const STATUS_LABELS = {
 };
 const statusLabel = (status) => STATUS_LABELS[status] || status;
 
-function appUrl() {
-  return process.env.PUBLIC_BASE_URL || process.env.APP_URL || `https://${process.env.VERCEL_URL || 'rockfieldglobalfinance.com'}`;
-}
+const appUrl = require('../utils/config').baseUrl;
 
 /** The shape sent to the browser. */
 function publicTransfer(transfer) {

@@ -275,6 +275,12 @@ every page already. Every other variable on this page is genuinely secret and
 should be marked Sensitive: the encryption key, the admin password, the
 service-role key, the Resend and Pingram keys.
 
+If the dialog will not let you save it as plain text - some projects have
+sensitive variables switched on by policy - use **`BANK_BASE_URL`** instead.
+It carries no prefix, so nothing objects to it, and it is read everywhere
+`PUBLIC_BASE_URL` is. `APP_URL` works too. Set one of the three; the first one
+set wins, in that order.
+
 The bank seeds itself on the first request against an empty database: the
 administrator above, a demonstration customer and six months of history. Sign
 in at `/console`, and **delete the demonstration customers before using this
@@ -453,7 +459,7 @@ notifications, so you can work entirely offline. To test notifications locally, 
 | `PINGRAM_SMS_FROM` | for texts | The sending number, in E.164 (`+18005559999`) |
 | `PINGRAM_DEFAULT_COUNTRY` | no | Country code assumed for a ten-digit number with no `+` (default `1`) |
 | `PINGRAM_SMS_URL` | no | Override for Pingram's send endpoint (default `https://api.pingram.io/sms`) |
-| `PUBLIC_BASE_URL` | for email | Absolute base for the links inside alert emails |
+| `PUBLIC_BASE_URL` | for email | Absolute base for the links inside alert emails. `BANK_BASE_URL` and `APP_URL` are accepted too, for when Vercel refuses the `PUBLIC_` prefix |
 | `BANK_RATE_LIMIT_MAX` | no | Requests per minute per IP against `/api/bank` (default 300) |
 | `BANK_LOGIN_RATE_LIMIT` | no | Sign-in attempts per five minutes per IP (default 20) |
 | `BANK_COOKIE_INSECURE` | no | `1` drops the Secure flag from the session cookie, for plain HTTP locally |

@@ -109,6 +109,38 @@ function forwardWouldLoop() {
   return Boolean(target) && ownAddresses().has(target);
 }
 
+/**
+ * The site's own absolute address.
+ *
+ * Used wherever a link has to survive leaving the page it was made on: the
+ * buttons inside an alert email, the link card scrapers fetch, a transfer
+ * receipt. A relative path is fine in a browser and useless in an inbox.
+ *
+ * Three names are accepted, and the reason is Vercel. PUBLIC_BASE_URL is the
+ * documented one, but Vercel reads the PUBLIC_ prefix as a front-end
+ * framework's public prefix - the one Astro, Nuxt and SvelteKit inline into
+ * the browser bundle - and refuses to store such a variable as a secret:
+ *
+ *   Environment variables with a public framework prefix cannot use
+ *   `visibility: secret`. Use `visibility: config` instead.
+ *
+ * Saving it as plain text is the right answer and is what the deployment
+ * guide says, since this is a domain name rather than a secret. But a project
+ * or team that has sensitive variables switched on by policy cannot save it
+ * either way, and nobody should have to argue with a form over the name of
+ * their own website. BANK_BASE_URL and APP_URL carry no prefix and do the
+ * same job.
+ *
+ * Trailing slashes are trimmed here so that callers can append a path without
+ * each one remembering to.
+ */
+function baseUrl() {
+  const set = pick('PUBLIC_BASE_URL', 'BANK_BASE_URL', 'APP_URL');
+  const vercel = pick('VERCEL_URL');
+  const value = set || (vercel ? `https://${vercel}` : 'https://rockfieldglobalfinance.com');
+  return value.replace(/\/+$/, '');
+}
+
 const ACCEPTED_NAMES = {
   supabaseUrl: ['SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_URL', 'VITE_SUPABASE_URL'],
   supabaseAnonKey: [
@@ -120,11 +152,13 @@ const ACCEPTED_NAMES = {
     'VITE_SUPABASE_PUBLISHABLE_KEY',
   ],
   supabaseServiceRoleKey: ['SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_SECRET_KEY'],
+  baseUrl: ['PUBLIC_BASE_URL', 'BANK_BASE_URL', 'APP_URL'],
 };
 
 module.exports = {
   ACCEPTED_NAMES,
   pick,
+  baseUrl,
   isDeployed,
   showDevCodes,
   supabaseUrl,
