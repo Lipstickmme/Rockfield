@@ -17,24 +17,30 @@ function autoReply(text) {
     return "Hi, you're through to Rockfield client services. How can we help? Please never send a password, a card number or a one-time code in chat.";
   }
   if (has('career', 'job', 'hiring', 'vacancy', 'apply', 'position', 'role')) {
-    return 'We are hiring across structural, civil, mechanical and digital teams. You can see open roles on our Careers page, or tell me which discipline interests you.';
+    return 'We hire across branch, operations, risk and technology. Open roles are on our Careers page, or tell me which area interests you.';
   }
-  if (has('quote', 'cost', 'price', 'fee', 'budget')) {
-    return 'Fees depend on scope and stage. If you share a short project brief along with your email, a principal engineer will come back to you with a considered response.';
+  if (has('fee', 'charge', 'cost', 'price', 'rate', 'apy', 'interest', 'minimum')) {
+    return 'Every rate and fee we charge is on the Rates and fees page, including the overdraft and wire schedules. If you tell me which account you are asking about, I can point you at the right line.';
   }
-  if (has('project', 'portfolio', 'work', 'reference', 'example')) {
-    return 'You can browse selected projects on our Projects page, spanning towers, bridges, industrial plant and transit. Is there a sector you would like to see?';
+  if (has('open an account', 'open account', 'sign up', 'new account', 'apply for')) {
+    return 'You can open an account online in about ten minutes. You will need a government ID and your Social Security number. Start at Open an account, or tell me whether it is personal or business and I will point you at the right product.';
   }
-  if (has('bridge', 'structural', 'seismic', 'civil', 'mechanical', 'hvac', 'bim', 'digital twin', 'facade')) {
-    return 'That is squarely in our wheelhouse. Share a few details about the project and where it gets difficult, and we will point you to the right engineer.';
+  if (has('lost', 'stolen', 'fraud', 'unauthorised', 'unauthorized', 'scam', 'dispute', 'suspicious')) {
+    return 'If you think a card or an account has been compromised, do not wait on chat: call our fraud line, which is listed on the Security centre page and answered around the clock. You can also freeze a card yourself under Cards in online banking.';
   }
-  if (has('contact', 'call', 'phone', 'email', 'meet', 'speak')) {
-    return 'The fastest route is the contact page, where our client services number and hours are listed. Leave your email here and a banker will come back to you the same business day.';
+  if (has('password', 'locked', 'log in', 'login', 'sign in', 'signin', 'code', 'access')) {
+    return 'You can reset a password from the sign-in page under "Forgotten your password?". We will email a one-time code. Never share that code with anyone, including anyone claiming to be from the bank.';
+  }
+  if (has('transfer', 'wire', 'ach', 'payment', 'deposit', 'statement', 'balance', 'card', 'account')) {
+    return 'A customer service representative can go through that with you. Leave your email here and the account it concerns - never the full number - and one will come back to you the same business day.';
+  }
+  if (has('contact', 'call', 'phone', 'email', 'meet', 'speak', 'branch', 'hours')) {
+    return 'The fastest route is the contact page, where our client services number and hours are listed. Leave your email here and a customer service representative will come back to you the same business day.';
   }
   if (has('thanks', 'thank you', 'cheers', 'great')) {
     return 'Any time. Anything else I can help with?';
   }
-  return "Thanks for the message. A member of the studio will follow up. If you leave your email and a one-line brief, we'll route it to the right engineer.";
+  return "Thanks for the message. A customer service representative will follow up. If you leave your email and a line about what you need, we'll route it to the right person.";
 }
 
 /**

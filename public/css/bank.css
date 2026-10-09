@@ -1349,10 +1349,15 @@ a.rf-auth-brand {
 .chat-msg.typing { color: var(--rf-ink-3); font-style: italic; }
 
 .chat-form { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--rf-line-2); background: var(--rf-surface); }
+/* A form control does not inherit `color` - it takes the browser's own, which
+   is black. On the dark theme that is black type in a near-black field: what
+   the visitor types disappears as they type it. Every other input in the
+   application sets this; the chat box was the one that did not. */
 .chat-form input {
   flex: 1; border: 1px solid var(--rf-line); border-radius: 999px; padding: 10px 14px;
-  font: 400 14px/1.4 var(--rf-sans); background: var(--rf-surface);
+  font: 400 14px/1.4 var(--rf-sans); background: var(--rf-surface); color: var(--rf-ink);
 }
+.chat-form input::placeholder { color: var(--rf-ink-4); opacity: 1; }
 .chat-form input:focus { outline: none; border-color: var(--rf-navy-3); box-shadow: 0 0 0 3px rgba(41, 74, 119, .13); }
 .chat-form button { border: 0; background: var(--rf-navy); color: #fff; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: grid; place-items: center; }
 .chat-form button:hover { background: var(--rf-navy-2); }

@@ -55,7 +55,7 @@ exports.create = async (req, res, next) => {
     return res.status(201).json({
       ok: true,
       id: record.id,
-      message: 'Thank you. Your enquiry has reached our engineers.',
+      message: 'Thank you. Your enquiry has reached our client services team.',
     });
   } catch (err) {
     return next(err);

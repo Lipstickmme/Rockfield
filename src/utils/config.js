@@ -109,6 +109,35 @@ function forwardWouldLoop() {
   return Boolean(target) && ownAddresses().has(target);
 }
 
+const domainOf = (address) => {
+  const at = String(address || '').lastIndexOf('@');
+  return at === -1 ? '' : address.slice(at + 1);
+};
+
+/**
+ * Which FORM_TO recipients sit on the domain this site receives mail for.
+ *
+ * Setting up inbound means pointing that domain's MX records at the provider,
+ * which hands every message to this application's webhook. Addressing the
+ * site's own notifications to an address on that domain therefore sends them
+ * in a circle: out through the API, back in through the webhook, onto the
+ * message desk - and no further, unless FORWARD_TO carries them to a mailbox
+ * somebody actually opens.
+ *
+ * It looks like it is working from both ends. The provider's log says the
+ * message was delivered, because it was; the desk shows it arriving, because
+ * it did. The only thing missing is the inbox, which is the one place the
+ * person is looking.
+ */
+function formToOnInboundDomain() {
+  const domain = domainOf(parseAddress(mailboxAddress()).email);
+  if (!domain) return [];
+  return String(formTo() || '')
+    .split(',')
+    .map((part) => parseAddress(part).email)
+    .filter((address) => address && domainOf(address) === domain);
+}
+
 /**
  * The site's own absolute address.
  *
@@ -174,4 +203,5 @@ module.exports = {
   parseAddress,
   ownAddresses,
   forwardWouldLoop,
+  formToOnInboundDomain,
 };

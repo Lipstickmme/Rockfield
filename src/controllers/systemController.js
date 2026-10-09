@@ -209,6 +209,21 @@ exports.health = async (req, res) => {
       'MAILBOX_ADDRESS is set but RESEND_WEBHOOK_SECRET is not. The inbound endpoint refuses every request rather than trusting unsigned posts.'
     );
   }
+  // Notifications addressed into our own inbound mailbox. The provider says
+  // delivered and the desk shows it arrive, so both ends look healthy; the
+  // only thing missing is the inbox, which is where somebody is looking.
+  const looped = config.formToOnInboundDomain();
+  if (looped.length) {
+    warnings.push(
+      `FORM_TO (${looped.join(', ')}) is on the same domain as MAILBOX_ADDRESS. `
+      + 'If that domain\'s MX records point at the mail provider\'s inbound service, which is what MAILBOX_ADDRESS is for, '
+      + 'then notifications sent there come straight back into this application and are filed on the message desk at /admin. '
+      + (config.forwardTo()
+        ? 'FORWARD_TO then copies them to a real inbox, so this is survivable - but the address is still a round trip.'
+        : 'FORWARD_TO is not set, so they go no further and never reach a mailbox anybody opens. '
+          + 'Point FORM_TO at a mailbox on another domain, or set FORWARD_TO to one.')
+    );
+  }
   // The bank's own bootstrap. Whether the administrator's credentials come
   // from the environment is the single most common thing to get wrong on a
   // deployment, and it is invisible from the sign-in page, which says only

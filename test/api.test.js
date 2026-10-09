@@ -323,6 +323,58 @@ async function withApp(env, fn) {
     );
     sameEmail.close();
 
+    // Addressing the site's own notifications to the mailbox the site itself
+    // receives on sends them in a circle: out through the API, back in through
+    // the inbound webhook, onto the message desk, and no further. Both ends
+    // report success - the provider delivered it, the desk filed it - so the
+    // only symptom is an inbox that stays empty, which is a miserable thing to
+    // debug from the outside.
+    const looping = await mock.start({});
+    await withApp(
+      {
+        SUPABASE_URL: `http://127.0.0.1:${looping.address().port}`,
+        SUPABASE_SERVICE_ROLE_KEY: mock.SERVICE_KEY,
+        SUPABASE_ANON_KEY: mock.ANON_KEY,
+        RESEND_API_KEY: 're_test_key',
+        RESEND_WEBHOOK_SECRET: 'whsec_test',
+        MAILBOX_ADDRESS: 'Rockfield <support@rockfield.test>',
+        FORM_TO: 'support@rockfield.test',
+      },
+      async (base) => {
+        const res = await req(base, 'GET', '/api/health');
+        const warning = res.body.warnings.find((w) => /FORM_TO .* is on the same domain as MAILBOX_ADDRESS/.test(w));
+        assert.ok(warning, JSON.stringify(res.body.warnings));
+        assert.match(warning, /support@rockfield\.test/, 'it names the address');
+        assert.match(warning, /never reach a mailbox anybody opens/, 'and says what the consequence is');
+        console.log('  ok  notifications addressed into our own inbound mailbox are reported');
+      }
+    );
+    looping.close();
+
+    // The same pair of addresses on different domains is the correct setup and
+    // must stay quiet.
+    const notLooping = await mock.start({});
+    await withApp(
+      {
+        SUPABASE_URL: `http://127.0.0.1:${notLooping.address().port}`,
+        SUPABASE_SERVICE_ROLE_KEY: mock.SERVICE_KEY,
+        SUPABASE_ANON_KEY: mock.ANON_KEY,
+        RESEND_API_KEY: 're_test_key',
+        RESEND_WEBHOOK_SECRET: 'whsec_test',
+        MAILBOX_ADDRESS: 'Rockfield <support@rockfield.test>',
+        FORM_TO: 'someone@elsewhere.test',
+      },
+      async (base) => {
+        const res = await req(base, 'GET', '/api/health');
+        assert.ok(
+          !res.body.warnings.some((w) => /same domain as MAILBOX_ADDRESS/.test(w)),
+          JSON.stringify(res.body.warnings)
+        );
+        console.log('  ok  a recipient on another domain raises nothing');
+      }
+    );
+    notLooping.close();
+
     // Vercel resolves api/[...path].js for a single segment under /api and
     // nothing deeper: anything further in reaches the edge router and 404s
     // before Express sees it. That is why /api/health answered while every
