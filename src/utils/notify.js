@@ -11,7 +11,12 @@
  * Calls are awaited so a serverless function does not exit early.
  */
 
-const RESEND_ENDPOINT = 'https://api.resend.com/emails';
+/* Resolved per call rather than at load, so a test - or anyone putting their
+   own gateway in front of Resend - can point this somewhere else without
+   reaching into the module. */
+const resendBase = () => (process.env.RESEND_API_BASE || 'https://api.resend.com').replace(/\/+$/, '');
+const RESEND_ENDPOINT = () => `${resendBase()}/emails`;
+const DOMAINS_ENDPOINT = () => `${resendBase()}/domains`;
 
 function escapeHtml(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => (
@@ -67,7 +72,7 @@ async function send(opts) {
   if (opts.headers && Object.keys(opts.headers).length) payload.headers = opts.headers;
 
   try {
-    const res = await fetch(RESEND_ENDPOINT, {
+    const res = await fetch(RESEND_ENDPOINT(), {
       method: 'POST',
       headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -75,7 +80,13 @@ async function send(opts) {
     const text = await res.text().catch(() => '');
     if (!res.ok) {
       console.warn('[rockfield] notify email failed:', res.status, text);
-      return { ok: false, error: `resend_${res.status}` };
+      // Resend says why in the body - "The rockfield... domain is not
+      // verified", "You can only send testing emails to your own address".
+      // Dropping that and reporting a bare status code is what turns a
+      // five-second fix into an afternoon.
+      let detail = '';
+      try { detail = JSON.parse(text).message || ''; } catch (e) { detail = String(text || '').slice(0, 200); }
+      return { ok: false, error: `resend_${res.status}${detail ? `: ${detail}` : ''}`, status: res.status };
     }
     let id;
     try { id = JSON.parse(text).id; } catch (e) { /* id is a bonus, not a requirement */ }
@@ -158,4 +169,42 @@ function chatMessage(sessionId, text) {
   return notify('New live chat message', lines, { sessionId, text });
 }
 
-module.exports = { notify, send, sendEmail, enquiry, application, chatMessage, defaultTo, defaultFrom };
+/**
+ * What Resend holds for this account, and what it will do with it.
+ *
+ * A domain can be verified for sending and not for receiving - Resend calls
+ * that `partially_verified` - which looks identical from the outside to
+ * everything working, right up until somebody emails you. Asking the provider
+ * is the only way to tell the difference, and it is one request.
+ */
+async function domains() {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return { ok: false, error: 'no_api_key' };
+  try {
+    const res = await fetch(DOMAINS_ENDPOINT(), {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
+    const text = await res.text().catch(() => '');
+    if (!res.ok) {
+      let detail = '';
+      try { detail = JSON.parse(text).message || ''; } catch (e) { detail = String(text || '').slice(0, 200); }
+      return { ok: false, error: `resend_${res.status}${detail ? `: ${detail}` : ''}` };
+    }
+    const body = JSON.parse(text);
+    const list = Array.isArray(body) ? body : (body.data || []);
+    return {
+      ok: true,
+      domains: list.map((d) => ({
+        name: d.name,
+        status: d.status,
+        region: d.region,
+        sending: d.capabilities ? d.capabilities.sending : undefined,
+        receiving: d.capabilities ? d.capabilities.receiving : undefined,
+      })),
+    };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+}
+
+module.exports = { notify, send, sendEmail, enquiry, application, chatMessage, defaultTo, defaultFrom, domains };

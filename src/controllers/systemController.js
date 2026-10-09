@@ -114,6 +114,21 @@ exports.publicConfig = (req, res) => {
  * combinations that are configured but wrong.
  */
 /** How many accounts the bank has, or null if it cannot say. */
+/** The contact details the console has saved, so an operator can see them. */
+async function storedContact() {
+  try {
+    const settings = await require('../bank/settings').get();
+    return {
+      bankName: settings.bankName || '',
+      supportEmail: settings.supportEmail || '',
+      supportPhone: settings.supportPhone || '',
+      mailingAddress: settings.mailingAddress || '',
+    };
+  } catch (err) {
+    return { error: err.message };
+  }
+}
+
 async function countUsers() {
   try {
     return await require('../bank/db').db.users.count();
@@ -341,6 +356,69 @@ exports.health = async (req, res) => {
     }
   }
 
+  /*
+   * Opt-in: ask the mail provider what it actually holds.
+   *
+   * Every other check here reads the environment, which tells you a variable
+   * is set and nothing about whether mail can leave the building. The two
+   * questions that matter are not visible from inside this process at all:
+   * is the domain we send as verified for sending, and is the domain we
+   * receive on verified for receiving. Resend will answer both in one
+   * request, and a domain verified for one and not the other looks, from
+   * every other angle, exactly like a working setup.
+   */
+  let mail;
+  if (req.query.mail) {
+    const notify = require('../utils/notify');
+    const listed = await notify.domains();
+    const domainOf = (value) => {
+      const address = config.parseAddress(value).email;
+      const at = address.lastIndexOf('@');
+      return at === -1 ? '' : address.slice(at + 1);
+    };
+    const sendingAs = domainOf(config.formFrom());
+    const alertingAs = domainOf(process.env.BANK_ALERT_FROM || config.formFrom());
+    const receivingOn = domainOf(config.mailboxAddress());
+
+    mail = { ...listed, sendingAs, alertingAs, receivingOn };
+
+    if (!listed.ok) {
+      warnings.push(`Resend would not list this account's domains: ${listed.error}. Check RESEND_API_KEY.`);
+    } else {
+      const find = (name) => listed.domains.find((d) => d.name === name);
+      [['FORM_FROM', sendingAs], ['BANK_ALERT_FROM', alertingAs]].forEach(([label, domain]) => {
+        if (!domain) return;
+        const row = find(domain);
+        if (!row) {
+          warnings.push(
+            `${label} sends as ${domain}, which is not a domain on this Resend account `
+            + `(it holds ${listed.domains.map((d) => d.name).join(', ') || 'none'}). Every send will be refused.`
+          );
+        } else if (row.sending === false || row.status === 'not_started' || row.status === 'pending') {
+          warnings.push(
+            `${label} sends as ${domain}, which Resend reports as "${row.status}"`
+            + `${row.sending === false ? ' and not verified for sending' : ''}. Sends from it will be refused.`
+          );
+        }
+      });
+      if (receivingOn) {
+        const row = find(receivingOn);
+        if (!row) {
+          warnings.push(
+            `MAILBOX_ADDRESS receives on ${receivingOn}, which is not a domain on this Resend account. `
+            + 'Nothing will ever reach the inbound webhook.'
+          );
+        } else if (row.receiving === false) {
+          warnings.push(
+            `MAILBOX_ADDRESS receives on ${receivingOn}, which Resend reports as "${row.status}" and not verified `
+            + 'for receiving. Mail sent to that domain has nowhere to land: add the inbound MX record Resend gives you, '
+            + 'or point the address at a mailbox you host elsewhere.'
+          );
+        }
+      }
+    }
+  }
+
   // Opt-in: the plain health check stays a pure environment read.
   let schema;
   if (req.query.probe) {
@@ -382,6 +460,13 @@ exports.health = async (req, res) => {
       // and the bank has silently fallen back to ephemeral local files.
       tables: bankTables === null ? 'not using supabase' : bankTables,
       administrators: await administrators(),
+      // What the console has actually saved, as opposed to what the code
+      // ships as a default. A settings row written before a domain move keeps
+      // the old address, and because it then differs from the new default it
+      // is read as a deliberate choice and wins - so a public page can go on
+      // printing an address nobody reads long after the code changed. There
+      // is no way to see that from the outside, which is why it is here.
+      settings: await storedContact(),
       // 'empty', 'incomplete', 'complete', or 'unmarked' for a bank seeded
       // before the completion marker existed. Read again after a ?seed run, so
       // the answer describes the bank as it is now rather than as it was when
@@ -396,6 +481,7 @@ exports.health = async (req, res) => {
       seedRun,
     },
     schema: req.query.probe ? schema || 'supabase not configured' : undefined,
+    mail,
     warnings,
   });
 };

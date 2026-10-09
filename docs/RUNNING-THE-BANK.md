@@ -214,3 +214,42 @@ Credit a test customer a small amount from the console and watch:
 
 If an alert says `not_configured`, the provider variable is missing from the
 **Production** environment, or there has been no redeploy since it was added.
+
+### When mail does not arrive
+
+Open **`/api/health?mail=1`**. The plain health check only reads the
+environment, which tells you a variable is set and nothing about whether mail
+can leave the building. With `?mail=1` it asks Resend directly and reports
+what that account actually holds:
+
+```
+"mail": {
+  "ok": true,
+  "domains": [
+    { "name": "yourdomain.com", "status": "partially_verified",
+      "sending": true, "receiving": false }
+  ],
+  "sendingAs": "yourdomain.com",
+  "receivingOn": "yourdomain.com"
+}
+```
+
+That example is the state worth knowing about, because it looks healthy from
+every angle except the one that matters. A domain is verified for **sending**
+by the SPF and DKIM records; it is verified for **receiving** by a separate MX
+record that most people never add, having no reason to. Mail then leaves
+perfectly, the provider's log says delivered, and anything addressed *to* that
+domain has nowhere to land. The warnings say which of the two is missing and
+name the variable that depends on it.
+
+Two further things it catches: a `from` address on a domain the account does
+not hold at all, which refuses every send; and notifications addressed into
+the bank's own inbound mailbox, which travel out through the API and back in
+through the webhook onto the message desk, and no further unless `FORWARD_TO`
+carries them to an inbox somebody opens.
+
+`/api/health` also reports, under `bank.settings`, the contact details the
+console has saved - as opposed to the ones the code ships. A settings row
+written before a domain move keeps the old address, and since it then differs
+from the shipped default it is read as a deliberate choice and wins, so a page
+can go on printing an address nobody reads long after the code changed.

@@ -375,6 +375,68 @@ async function withApp(env, fn) {
     );
     notLooping.close();
 
+    // A domain verified for sending and not for receiving is the state that
+    // looks healthiest from every angle except the one that matters: mail
+    // leaves fine, the provider's log says delivered, and anything addressed
+    // to that domain has nowhere to land. ?mail=1 asks the provider rather
+    // than inferring it, because nothing inside this process can tell.
+    {
+      const resend = await new Promise((r) => {
+        const s = http.createServer((rq, rs) => {
+          rs.writeHead(200, { 'content-type': 'application/json' });
+          rs.end(JSON.stringify({
+            has_more: false,
+            data: [{
+              name: 'rockfield.test',
+              status: 'partially_verified',
+              region: 'us-east-1',
+              capabilities: { sending: true, receiving: false },
+            }],
+          }));
+        }).listen(0, '127.0.0.1', () => r(s));
+      });
+      const sb = await mock.start({});
+      await withApp(
+        {
+          SUPABASE_URL: `http://127.0.0.1:${sb.address().port}`,
+          SUPABASE_SERVICE_ROLE_KEY: mock.SERVICE_KEY,
+          SUPABASE_ANON_KEY: mock.ANON_KEY,
+          RESEND_API_KEY: 're_test_key',
+          RESEND_API_BASE: `http://127.0.0.1:${resend.address().port}`,
+          RESEND_WEBHOOK_SECRET: 'whsec_test',
+          FORM_FROM: 'Rockfield <support@rockfield.test>',
+          MAILBOX_ADDRESS: 'Rockfield <support@rockfield.test>',
+          FORM_TO: 'someone@elsewhere.test',
+        },
+        async (base) => {
+          const res = await req(base, 'GET', '/api/health?mail=1');
+          assert.strictEqual(res.body.mail.ok, true, JSON.stringify(res.body.mail));
+          assert.strictEqual(res.body.mail.domains[0].sending, true);
+          assert.strictEqual(res.body.mail.domains[0].receiving, false);
+          assert.ok(
+            res.body.warnings.some((w) => /MAILBOX_ADDRESS receives on rockfield\.test.*not verified\s+for receiving/s.test(w)),
+            JSON.stringify(res.body.warnings)
+          );
+          assert.ok(
+            !res.body.warnings.some((w) => /FORM_FROM sends as/.test(w)),
+            'sending is fine and must not be reported as broken'
+          );
+
+          // Without ?mail=1 nothing reaches out: the plain check stays an
+          // environment read that cannot hang on somebody else's API.
+          const plain = await req(base, 'GET', '/api/health');
+          assert.strictEqual(plain.body.mail, undefined);
+          console.log('  ok  a domain verified to send but not receive is named for what it is');
+        }
+      );
+      sb.close();
+      resend.close();
+      // withApp assigns into process.env and never takes anything back out,
+      // so a base URL pointing at a server we have just closed would follow
+      // every later test and fail its sends with "fetch failed".
+      delete process.env.RESEND_API_BASE;
+    }
+
     // Vercel resolves api/[...path].js for a single segment under /api and
     // nothing deeper: anything further in reaches the edge router and 404s
     // before Express sees it. That is why /api/health answered while every
