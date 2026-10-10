@@ -1235,9 +1235,20 @@ a.rf-auth-brand {
   :root:not([data-rf-theme="light"]) .rf-marketing-nav { background: #fff; border-bottom-color: #dfe6f0; }
   :root:not([data-rf-theme="light"]) .rf-marketing-nav .brandline strong { color: #101725; }
   :root:not([data-rf-theme="light"]) .rf-marketing-nav .brandline small { color: #3d4757; }
-  :root:not([data-rf-theme="light"]) .rf-marketing-nav .rf-btn.ghost {
+  :root:not([data-rf-theme="light"]) .rf-marketing-nav .rf-btn.ghost,
+  /* ...and on hover too.
+
+     The generic dark-theme hover below gives a ghost button a dark face,
+     which is right everywhere except here: this bar keeps its white ground,
+     so its buttons keep their light one. Both selectors used to weigh the
+     same and the hover came later, so "Open an account" went to near-black
+     ink on a near-black face the moment the pointer touched it - a button
+     that erased itself. Naming the hover here settles it on this bar
+     without touching the rule for everywhere else. */
+  :root:not([data-rf-theme="light"]) .rf-marketing-nav .rf-btn.ghost:hover {
     --btn-face: #fff; --btn-edge: #dfe6f0; --btn-ink: #101725;
   }
+  :root:not([data-rf-theme="light"]) .rf-marketing-nav .rf-btn.ghost:hover { --btn-edge: #b9c6d8; }
   /* The lift still reads on a dark page, but a light border does not: the
      hover edge goes up in brightness instead of down. */
   :root:not([data-rf-theme="light"]) .rf-card.interactive:hover,

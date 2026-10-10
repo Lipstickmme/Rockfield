@@ -19,6 +19,42 @@
     const form = qs('#rf-transfer-form');
     const picker = qs('[data-type-picker]');
     const options = await api.get('/transfers/options');
+
+    /*
+     * A sign-in with no accounts of its own has nothing to move money
+     * between, and two empty dropdowns are a very poor way of saying so -
+     * they look like a page that failed to load rather than one with nothing
+     * to show.
+     *
+     * In practice this is always a staff sign-in. Staff do not transfer:
+     * money moves on a customer's ledger, from the console, which is a
+     * different thing in a different place. Say which.
+     */
+    if (!options.accounts.length) {
+      const staff = RF.state.user && RF.state.user.role === 'admin';
+      const notice = document.createElement('div');
+      notice.className = 'rf-notice warn';
+      // .rf-notice is a flex row, so everything has to go in one child or
+      // each sentence lands in a column of its own.
+      const body = document.createElement('div');
+      body.innerHTML = staff
+        ? '<strong>This sign-in has no accounts of its own.</strong> Staff do not move money from here. '
+          + 'Open the <a href="/console">console</a>, find the customer, and post an adjustment against the '
+          + 'account you mean - a debit on one side and a credit on the other, if you are moving money between two.'
+        : '<strong>There are no accounts on this profile yet.</strong> Once one is open it will appear here.';
+      notice.appendChild(body);
+      form.parentNode.insertBefore(notice, form);
+      // Hidden, never removed. The rest of this function still writes to the
+      // type picker and the limits panel, and the transfer history below is
+      // worth loading whether or not this sign-in can send anything. Both of
+      // those carry a display of their own, which outranks the hidden
+      // attribute, so they are taken out of flow by hand instead.
+      form.hidden = true;
+      if (picker) picker.style.display = 'none';
+      const side = notice.closest('.rf-grid.side');
+      if (side && side.children.length > 1) side.lastElementChild.style.display = 'none';
+    }
+
     let type = new URLSearchParams(location.search).get('type') || 'internal';
 
     picker.innerHTML = options.types.map((t) => `<button type="button" data-type="${esc(t.id)}"${t.id === type ? ' class="is-active"' : ''}>${esc(t.label)}</button>`).join('');
