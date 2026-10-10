@@ -431,9 +431,31 @@ exports.health = async (req, res) => {
     });
   }
 
+  /*
+   * Which code is answering.
+   *
+   * Without this the only way to tell a deployment apart from the one before
+   * it is to notice a key that is missing, which means knowing in advance
+   * which key to look for. Several rounds of "that should be fixed" have gone
+   * past on a deployment that had not picked the fix up, and nothing in this
+   * response said so.
+   *
+   * `version` comes from package.json, which travels with the code and is
+   * readable at runtime. `commit` comes from the host when it offers one -
+   * Vercel only populates VERCEL_GIT_COMMIT_SHA when the project has an
+   * ignored build step configured, so it is a bonus rather than the answer.
+   */
+  const commit = config.pick('VERCEL_GIT_COMMIT_SHA', 'GIT_COMMIT_SHA', 'SOURCE_VERSION', 'RENDER_GIT_COMMIT');
+
+  // A health check read through a cache is worse than none: it answers for a
+  // deployment that may no longer exist.
+  res.setHeader('Cache-Control', 'no-store, max-age=0');
   res.json({
     status: warnings.length ? 'degraded' : 'ok',
     service: 'rockfield-national-bank',
+    version: require('../../package.json').version,
+    commit: commit ? commit.slice(0, 7) : undefined,
+    branch: config.pick('VERCEL_GIT_COMMIT_REF') || undefined,
     time: new Date().toISOString(),
     config: {
       supabaseUrl: Boolean(url),
