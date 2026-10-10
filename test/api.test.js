@@ -386,12 +386,24 @@ async function withApp(env, fn) {
           rs.writeHead(200, { 'content-type': 'application/json' });
           rs.end(JSON.stringify({
             has_more: false,
-            data: [{
-              name: 'rockfield.test',
-              status: 'partially_verified',
-              region: 'us-east-1',
-              capabilities: { sending: true, receiving: false },
-            }],
+            // The shape a real account returns: capabilities are the strings
+            // "enabled" and "disabled", not booleans. Read as booleans, the
+            // receiving check never fired on a domain that plainly could not
+            // receive, which is the whole reason this exists.
+            data: [
+              {
+                name: 'rockfield.test',
+                status: 'verified',
+                region: 'eu-west-1',
+                capabilities: { sending: 'enabled', receiving: 'disabled' },
+              },
+              {
+                name: 'elsewhere.test',
+                status: 'verified',
+                region: 'eu-west-1',
+                capabilities: { sending: 'enabled', receiving: 'enabled' },
+              },
+            ],
           }));
         }).listen(0, '127.0.0.1', () => r(s));
       });
@@ -411,12 +423,13 @@ async function withApp(env, fn) {
         async (base) => {
           const res = await req(base, 'GET', '/api/health?mail=1');
           assert.strictEqual(res.body.mail.ok, true, JSON.stringify(res.body.mail));
-          assert.strictEqual(res.body.mail.domains[0].sending, true);
-          assert.strictEqual(res.body.mail.domains[0].receiving, false);
-          assert.ok(
-            res.body.warnings.some((w) => /MAILBOX_ADDRESS receives on rockfield\.test.*not verified\s+for receiving/s.test(w)),
-            JSON.stringify(res.body.warnings)
-          );
+          assert.strictEqual(res.body.mail.domains[0].sending, 'enabled');
+          assert.strictEqual(res.body.mail.domains[0].receiving, 'disabled');
+          const receiving = res.body.warnings.find((w) => /MAILBOX_ADDRESS receives on rockfield\.test/.test(w));
+          assert.ok(receiving, JSON.stringify(res.body.warnings));
+          assert.match(receiving, /receiving disabled/, 'it says which capability is off');
+          assert.match(receiving, /MX record/, 'and that SPF and DKIM do not cover it');
+          assert.match(receiving, /elsewhere\.test/, 'and names a domain on the account that can receive');
           assert.ok(
             !res.body.warnings.some((w) => /FORM_FROM sends as/.test(w)),
             'sending is fine and must not be reported as broken'

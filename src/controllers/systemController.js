@@ -386,6 +386,21 @@ exports.health = async (req, res) => {
       warnings.push(`Resend would not list this account's domains: ${listed.error}. Check RESEND_API_KEY.`);
     } else {
       const find = (name) => listed.domains.find((d) => d.name === name);
+      /*
+       * Resend reports a capability as the string "enabled" or "disabled".
+       * This read it as a boolean, so `=== false` was never true and the one
+       * check worth having - is this domain able to receive - stayed silent
+       * on a domain that plainly could not. Accept both shapes, and treat
+       * anything else as unknown rather than as working: a check that cannot
+       * tell should say so, not wave things through.
+       */
+      const can = (value) => {
+        if (value === true || value === 'enabled') return true;
+        if (value === false || value === 'disabled') return false;
+        return undefined;
+      };
+      const UNVERIFIED = ['not_started', 'pending', 'failure', 'temporary_failure'];
+
       [['FORM_FROM', sendingAs], ['BANK_ALERT_FROM', alertingAs]].forEach(([label, domain]) => {
         if (!domain) return;
         const row = find(domain);
@@ -394,13 +409,17 @@ exports.health = async (req, res) => {
             `${label} sends as ${domain}, which is not a domain on this Resend account `
             + `(it holds ${listed.domains.map((d) => d.name).join(', ') || 'none'}). Every send will be refused.`
           );
-        } else if (row.sending === false || row.status === 'not_started' || row.status === 'pending') {
+          return;
+        }
+        const sending = can(row.sending);
+        if (sending === false || UNVERIFIED.includes(row.status)) {
           warnings.push(
             `${label} sends as ${domain}, which Resend reports as "${row.status}"`
-            + `${row.sending === false ? ' and not verified for sending' : ''}. Sends from it will be refused.`
+            + `${sending === false ? ' with sending disabled' : ''}. Sends from it will be refused.`
           );
         }
       });
+
       if (receivingOn) {
         const row = find(receivingOn);
         if (!row) {
@@ -408,11 +427,20 @@ exports.health = async (req, res) => {
             `MAILBOX_ADDRESS receives on ${receivingOn}, which is not a domain on this Resend account. `
             + 'Nothing will ever reach the inbound webhook.'
           );
-        } else if (row.receiving === false) {
+        } else if (can(row.receiving) === false) {
+          const alternative = listed.domains
+            .filter((d) => can(d.receiving) === true)
+            .map((d) => d.name);
           warnings.push(
-            `MAILBOX_ADDRESS receives on ${receivingOn}, which Resend reports as "${row.status}" and not verified `
-            + 'for receiving. Mail sent to that domain has nowhere to land: add the inbound MX record Resend gives you, '
-            + 'or point the address at a mailbox you host elsewhere.'
+            `MAILBOX_ADDRESS receives on ${receivingOn}, which Resend reports as "${row.status}" for the domain but `
+            + 'with receiving disabled. Mail sent to that address has nowhere to land. Turn receiving on for the '
+            + 'domain in Resend and add the MX record it gives you - the sending records, SPF and DKIM, do not cover '
+            + `receiving.${alternative.length ? ` Receiving is on for ${alternative.join(', ')}.` : ''}`
+          );
+        } else if (UNVERIFIED.includes(row.status)) {
+          warnings.push(
+            `MAILBOX_ADDRESS receives on ${receivingOn}, which Resend reports as "${row.status}". `
+            + 'Until it verifies, mail sent there has nowhere to land.'
           );
         }
       }
