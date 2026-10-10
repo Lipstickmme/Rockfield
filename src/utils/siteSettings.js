@@ -30,6 +30,33 @@ const FIELDS = ['address', 'email', 'phone', 'hours', 'fraudPhone', 'internation
 /** Trimmed string, or '' - a stored value can be null, absent or whitespace. */
 const str = (value) => (value == null ? '' : String(value).trim());
 
+/*
+ * Addresses this application has shipped as its own default and since
+ * retired.
+ *
+ * `configured()` below counts a stored console value as deliberate when it
+ * differs from what we ship now. That is right for a value somebody typed and
+ * wrong for one the seed wrote, because the console's support email is seeded
+ * from the institution's own. So when the bank moved domain, every deployment
+ * was left holding a settings row with the old address - which now differed
+ * from the default and therefore outranked it, permanently, and went on being
+ * printed on every public page long after the code had moved on. Nothing
+ * about that is visible from outside: the page simply shows an address nobody
+ * reads.
+ *
+ * A stored value matching a retired default was never a choice. Listing them
+ * is the only way to tell inheritance from intent after the fact. An operator
+ * who really wants one of these types it again, and the next line of this
+ * list retires it when it stops being ours.
+ */
+const RETIRED = {
+  email: ['support@rockfieldbank.com'],
+};
+
+/** True when a stored value is one we used to ship rather than one chosen. */
+const inherited = (key, value) =>
+  (RETIRED[key] || []).includes(str(value).toLowerCase());
+
 /** The first of these that has anything in it. */
 const firstOf = (...values) => values.map(str).find(Boolean) || '';
 
@@ -82,12 +109,15 @@ async function read() {
   // console value as an override would let that seed outrank an address a
   // person actually typed at the desk. A console value counts as configured
   // only where it differs from what we ship, and only then does it win.
-  const configured = (key) => (console_[key] && console_[key] !== str(defaults[key]) ? console_[key] : '');
+  // A retired default is dropped before either test: it is neither a choice
+  // nor worth preferring over the address we ship today.
+  const stored = (key) => (inherited(key, console_[key]) ? '' : console_[key]);
+  const configured = (key) => (stored(key) && stored(key) !== str(defaults[key]) ? stored(key) : '');
 
   if (FIELDS.some(configured)) source = 'settings';
 
   const merged = {};
-  FIELDS.forEach((key) => { merged[key] = firstOf(configured(key), desk[key], console_[key], defaults[key]); });
+  FIELDS.forEach((key) => { merged[key] = firstOf(configured(key), desk[key], stored(key), defaults[key]); });
   return { ...merged, source };
 }
 

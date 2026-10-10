@@ -722,6 +722,40 @@ async function withApp(env, fn) {
     sb.close();
   }
 
+  /* ---- 14b. a retired default does not outrank the current one ---- */
+  {
+    // The console's support email is seeded from the institution's own, so
+    // after a domain move every deployment held a settings row with the old
+    // address. That differed from the new default, which is how a value
+    // nobody chose came to outrank one the code ships - permanently, and
+    // invisibly, with the old address printed on every public page.
+    const current = require(ROOT + '/src/data/site.json').email;
+    const serveWith = async (supportEmail) => {
+      const sb = await mock.start({});
+      sb.db.bank_settings.rows.push({ id: 'global', values: { supportEmail }, updated_at: new Date().toISOString() });
+      let served;
+      await withApp(
+        {
+          SUPABASE_URL: `http://127.0.0.1:${sb.address().port}`,
+          SUPABASE_SERVICE_ROLE_KEY: mock.SERVICE_KEY,
+          SUPABASE_ANON_KEY: mock.ANON_KEY,
+        },
+        async (base) => { served = (await req(base, 'GET', '/api/site')).body; }
+      );
+      sb.close();
+      return served;
+    };
+
+    const retired = await serveWith('support@rockfieldbank.com');
+    assert.strictEqual(retired.email, current, 'a retired default gives way to the one we ship now');
+
+    const chosen = await serveWith('desk@elsewhere.example');
+    assert.strictEqual(chosen.email, 'desk@elsewhere.example', 'an address somebody typed still wins');
+    assert.strictEqual(chosen.source, 'settings');
+
+    console.log('  ok  a support address nobody chose stops outranking the shipped one');
+  }
+
   /* ---- 15. a signed Resend delivery reaches the admin inbox ---- */
   {
     const { sign } = require(ROOT + '/src/utils/webhookSignature');
