@@ -252,7 +252,10 @@ async function issueTransferOtp(user, transfer) {
   });
   const exposeCode = require('../utils/config').showDevCodes();
   if (exposeCode) {
-    console.log(`[rockfield] transfer OTP for ${user.email}: ${code} (email is not configured)`);
+    // Not necessarily because email is unconfigured - BANK_SHOW_DEV_CODES
+    // turns this on deliberately too - and saying so while mail is working
+    // sends whoever reads the log off after the wrong problem.
+    console.log(`[rockfield] transfer OTP for ${user.email}: ${code} (codes are being shown; see BANK_SHOW_DEV_CODES)`);
   }
   return { expiresAt, devCode: exposeCode ? code : undefined };
 }
