@@ -215,6 +215,18 @@ Credit a test customer a small amount from the console and watch:
 If an alert says `not_configured`, the provider variable is missing from the
 **Production** environment, or there has been no redeploy since it was added.
 
+### Texts recorded as failures
+
+If the console shows an alert as failed while the email plainly arrived, the
+database is missing the two columns the text channel writes. Run
+**`supabase/migrations/0004_bank_sms.sql`** in the Supabase SQL editor; it is
+safe to run twice. `/api/health?probe=1` names the file when they are absent,
+under `bank_alerts.sms`.
+
+The application survives without them - it drops the two text fields and
+records the email's own status rather than losing it - but nothing about a
+text is kept until the migration runs.
+
 ### When mail does not arrive
 
 Open **`/api/health?mail=1`**. The plain health check only reads the

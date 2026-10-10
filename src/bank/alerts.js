@@ -197,11 +197,41 @@ async function notifyUser(user, typeId, content = {}) {
       if (out.error) patch.sms_error = out.error;
     }
 
-    await db.alerts.update(alert.id, patch);
-    return { ...alert, ...patch };
+    const written = await recordDelivery(alert.id, patch);
+    return { ...alert, ...written };
   } catch (err) {
-    await db.alerts.update(alert.id, { status: 'failed', error: err.message });
+    await db.alerts.update(alert.id, { status: 'failed', error: err.message }).catch(() => {});
     return { ...alert, status: 'failed' };
+  }
+}
+
+/**
+ * Write what happened, even on a database that has not had 0004 run.
+ *
+ * sms_status and sms_error arrived with the text channel, in
+ * supabase/migrations/0004_bank_sms.sql. PostgREST rejects the whole PATCH
+ * when one column is missing - PGRST204 - so on a database still on 0003 the
+ * update threw, the catch marked the alert failed, and an email that had in
+ * fact been delivered was recorded as a failure. The row lied about the one
+ * thing it exists to record.
+ *
+ * The two text columns are the only optional ones, so drop them and write the
+ * rest. The email's own status is the part that must survive.
+ */
+async function recordDelivery(id, patch) {
+  try {
+    await db.alerts.update(id, patch);
+    return patch;
+  } catch (err) {
+    const missingColumn = /PGRST204|sms_status|sms_error/i.test(err.message || '');
+    if (!missingColumn) throw err;
+    const { sms_status: smsStatus, sms_error: smsError, ...emailOnly } = patch;
+    await db.alerts.update(id, emailOnly);
+    console.warn(
+      '[rockfield] bank_alerts has no sms_status/sms_error column, so text delivery is not being recorded. '
+      + 'Run supabase/migrations/0004_bank_sms.sql in the Supabase SQL editor.'
+    );
+    return emailOnly;
   }
 }
 

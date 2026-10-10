@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Studio desk: the staff side of enquiries, live chat and studio mail.
+ * Client services desk: the staff side of enquiries, live chat and mail.
  *
  * Everything on this page is read and written straight from the browser as
  * the signed-in user, so the policies in supabase/migrations decide what is
@@ -464,7 +464,7 @@
   function renderEmail() {
     const list = $('email-list');
     if (!state.emailAvailable) {
-      fill(list, [], 'Studio mail is not set up. Run supabase/migrations/0002_email.sql and point Resend Inbound at /api/inbound/resend.');
+      fill(list, [], 'Mail is not set up. Run supabase/migrations/0002_email.sql and point Resend Inbound at /api/inbound/resend.');
       $('email-detail').textContent = '';
       return;
     }
@@ -573,7 +573,7 @@
   /* ---------------------------------------------------------- settings --- */
 
   const SETTINGS_FIELDS = [
-    ['address', 'Studio address', 'text'],
+    ['address', 'Mailing address', 'text'],
     ['email', 'Email', 'email'],
     ['phone', 'Telephone', 'tel'],
     ['hours', 'Opening hours', 'text'],

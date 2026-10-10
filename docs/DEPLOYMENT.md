@@ -51,7 +51,7 @@ Project and service artwork is named per item in `src/data/projects.json` and
 `src/data/services.json`, so those take any filename you like.
 
 `rockfield1` carries the most weight: it is the first thing anyone sees, so pick the
-one that reads as the studio's signature and has calm space rather than busy
+one that reads as the bank's signature and has calm space rather than busy
 detail in the middle, where headlines sit.
 
 The mapping lives in `src/data/images.json`. Each slot names the file it prefers
@@ -199,7 +199,7 @@ those can stay set without effect.
 
 ## Step 5: Open the client services desk
 
-`/admin` is where enquiries, live chat and studio mail are read and answered. It is
+`/admin` is where enquiries, live chat and inbound mail are read and answered. It is
 not linked from the site and carries `noindex`; access is decided by Supabase auth,
 not by the URL being unlisted.
 
@@ -318,11 +318,11 @@ walks through both providers and what a customer receives when money arrives.
 
 ## Step 8: Receive mail on your domain and forward it
 
-This gives you `studio@yourdomain.com` that lands in whatever inbox you actually read.
+This gives you `support@yourdomain.com` that lands in whatever inbox you actually read.
 The endpoint is `POST /api/inbound/resend`.
 
 1. In Resend, verify your domain if you have not already, and enable **inbound email**
-   for the address you want (for example `studio@yourdomain.com`), following Resend's
+   for the address you want (for example `support@yourdomain.com`), following Resend's
    DNS instructions.
 2. Create a **webhook** pointing at:
 
@@ -337,7 +337,7 @@ The endpoint is `POST /api/inbound/resend`.
    | Name | Value |
    | ---- | ----- |
    | `RESEND_WEBHOOK_SECRET` | the `whsec_...` signing secret |
-   | `MAILBOX_ADDRESS` | `studio@yourdomain.com` |
+   | `MAILBOX_ADDRESS` | `support@yourdomain.com` |
    | `FORWARD_TO` | your real inbox |
 
 5. **Redeploy**, then send a test message to `MAILBOX_ADDRESS`.

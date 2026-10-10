@@ -97,7 +97,7 @@
         form.reset();
         describe(null);
         statusEl.className = 'form-status ok';
-        statusEl.textContent = data.message || 'Thank you. Your application is with the studio.';
+        statusEl.textContent = data.message || 'Thank you. Your application is with our recruitment team.';
       } else if (res.status === 422 && data.fields) {
         Object.entries(data.fields).forEach(([k, v]) => setErr(k, v));
         statusEl.className = 'form-status bad';

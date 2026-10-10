@@ -23,12 +23,12 @@
     return res.json();
   }
 
-  const FALLBACK_SERVICES = [
-    { code: 'S-01', title: 'Structural Engineering', summary: 'Load-path analysis, seismic detailing and high-rise frame design that let architecture reach further with less material.', capabilities: ['Finite element analysis', 'Seismic & wind design', 'Steel, concrete & timber', 'Retrofit & assessment'] },
-    { code: 'S-02', title: 'Civil & Infrastructure', summary: 'Roads, bridges, drainage and site works engineered for a hundred-year horizon and a changing climate.', capabilities: ['Highway & transit', 'Stormwater & flood', 'Bridges & culverts', 'Land development'] },
-    { code: 'S-03', title: 'Mechanical Systems', summary: 'HVAC, process piping and thermal systems tuned for efficiency, redundancy and quiet, reliable operation.', capabilities: ['HVAC & ventilation', 'Process & plant', 'Energy modelling', 'Commissioning'] },
-    { code: 'S-04', title: 'Digital Engineering', summary: 'BIM coordination, parametric design and digital twins that keep every discipline working from one source of truth.', capabilities: ['BIM / VDC', 'Parametric design', 'Digital twins', 'Clash & 4D scheduling'] }
-  ];
+  /* No fallback list of services here any more. The four that used to sit in
+     this file were the engineering practice this was built from - structural
+     frames, drainage, HVAC, BIM - and they were shipped to every visitor's
+     browser long after the bank stopped having anything to do with them.
+     /api/services serves the real ones; if it cannot be reached the section
+     stays empty, which is better than a bank offering seismic detailing. */
   const FALLBACK_PROJECTS = [
     { id: 'meridian-logistics', name: 'Meridian Logistics', sector: 'Business banking', location: 'Columbus, OH', year: 2025, metric: '2 days', metricLabel: 'cut from payroll settlement', image: '/assets/img/story-logistics.png', blurb: 'Same-day ACH origination took two days out of a payroll run for 640 drivers.' },
     { id: 'harrow-street', name: 'Harrow Street Residences', sector: 'Commercial lending', location: 'Columbus, OH', year: 2024, metric: '$14.2m', metricLabel: 'construction facility', image: '/assets/img/story-property.png', blurb: 'A construction facility drawn against surveyed progress rather than a fixed calendar.' },
@@ -291,7 +291,7 @@
   async function hydrateHome() {
     const svcGrid = $('#services-grid');
     if (svcGrid) {
-      let services = FALLBACK_SERVICES;
+      let services = [];
       try { const d = await fetchJSON('/api/services'); services = d.services || services; } catch (e) {}
       svcGrid.innerHTML = services.map((s, i) => `
         <article class="service" data-reveal>
@@ -314,7 +314,7 @@
   /* Contact form --------------------------------------------------------- */
 
   /** Wire every enquiry form on the page. Both post to the same endpoint, so
-      both land in `enquiries` and appear on the studio desk at /admin. */
+      both land in `enquiries` and appear on the client services desk at /admin. */
   function setupForms() {
     $$('[data-contact-form]').forEach(setupForm);
   }

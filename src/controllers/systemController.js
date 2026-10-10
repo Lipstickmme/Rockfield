@@ -63,6 +63,9 @@ const PROBES = [
     ['bank_otps', 'id,created_at,user_id,purpose,code_hash,expires_at'],
     ['bank_settings', 'id,values,updated_at'],
   ].map(([table, columns]) => ({ table, columns, migration: '0003_bank.sql' })),
+  // Probed separately so the answer names the file that actually adds these,
+  // rather than sending somebody back to 0003 where they are not.
+  { table: 'bank_alerts', key: 'bank_alerts.sms', columns: 'id,sms_status,sms_error', migration: '0004_bank_sms.sql' },
 ];
 
 async function probeSchema() {
@@ -71,14 +74,18 @@ async function probeSchema() {
 
   const results = {};
   const problems = [];
-  for (const { table, columns, migration, neededWhen } of PROBES) {
+  for (const { table, columns, migration, neededWhen, key } of PROBES) {
     const needed = neededWhen ? neededWhen() : true;
+    // A table can be probed twice - once for the columns one migration adds
+    // and once for another's - so the answers are keyed separately. Keyed on
+    // the table alone, the second probe would quietly overwrite the first.
+    const label = key || table;
     try {
       await supabase.select(table, `select=${columns}&limit=1`);
-      results[table] = 'ok';
+      results[label] = 'ok';
     } catch (err) {
-      results[table] = needed ? err.message : `optional: ${err.message}`;
-      if (needed) problems.push({ table, message: err.message, migration: migration || '0001_init.sql' });
+      results[label] = needed ? err.message : `optional: ${err.message}`;
+      if (needed) problems.push({ table: label, message: err.message, migration: migration || '0001_init.sql' });
     }
   }
   return { results, problems };

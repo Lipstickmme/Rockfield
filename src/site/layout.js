@@ -16,7 +16,7 @@ const YEAR = new Date().getFullYear();
 /**
  * The enquiry form. Shared so the landing page and /contact stay identical in
  * behaviour: both POST to /api/contact, which writes the enquiry and raises it
- * with the studio, and both appear in the desk at /admin.
+ * with the desk, and both appear in the desk at /admin.
  */
 function contactForm(id = 'contact-form') {
   return `

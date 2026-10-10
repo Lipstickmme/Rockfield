@@ -8,7 +8,7 @@
  * that way: it needs the Resend key, which only the server holds. This route is
  * therefore the one place that has to re-establish server side what those
  * policies would have enforced. Without it the endpoint would let anyone on the
- * internet send mail as the studio.
+ * internet send mail as the bank.
  */
 
 const config = require('./config');

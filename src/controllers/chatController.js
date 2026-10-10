@@ -65,7 +65,7 @@ exports.postMessage = async (req, res, next) => {
     const now = new Date().toISOString();
     const messages = [{ role: 'user', text, at: now }];
 
-    // Stay quiet once a member of the studio has picked the conversation up.
+    // Stay quiet once a representative has picked the conversation up.
     let handedOver = false;
     try {
       handedOver = await chatStore.isHandedOver(sessionId);

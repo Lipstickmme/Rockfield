@@ -1,6 +1,6 @@
 {
   "name": "rockfield-bank",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "Rockfield National Bank: online banking, staff console and public site",
   "main": "server.js",
   "type": "commonjs",

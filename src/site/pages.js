@@ -461,7 +461,7 @@ const careersContent = `
         <div>
           <span class="rf-eyebrow">Life at ${BANK.shortName}</span>
           <h2>Small enough to know what you changed.</h2>
-          <p class="section-lede">We are a national bank of about 900 people. Nobody here is four layers from a customer: a payments analyst sees the transfer they released land, and an engineer who changes the ledger sits close enough to the branch to hear when it went wrong. We pay at market, promote from inside, and do not run a graduate scheme that keeps people away from real work for a year.</p>
+          <p class="section-lede">We are a national bank of about 900 people. Nobody here is four layers from a customer: a payments analyst sees the transfer they released land, and whoever changes the ledger sits close enough to the branch to hear when it went wrong. We pay at market, promote from inside, and do not run a graduate scheme that keeps people away from real work for a year.</p>
         </div>
         <div class="rf-card"><div class="rf-card-body">
           <h3 style="font-family:var(--rf-display);margin:0 0 10px">What we offer</h3>

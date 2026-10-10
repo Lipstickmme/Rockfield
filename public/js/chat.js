@@ -6,7 +6,7 @@
  * Preferred path: the visitor is signed in anonymously and writes their own
  * rows to Supabase, so row level security grants them their own conversation
  * and nothing else. No token scheme of our own, no service key in the browser.
- * The studio answers from /admin and the reply appears here.
+ * The desk answers from /admin and the reply appears here.
  *
  * Fallback path: when Supabase is not configured, POST /api/chat/message,
  * where the server holds the service role. Same conversation either way, so a
@@ -138,7 +138,7 @@
           { session_id: id, sender: 'visitor', body: text },
           COLUMNS
         );
-        // The studio hears about it, and the holding reply comes back from the
+        // The desk hears about it, and the holding reply comes back from the
         // server, which is what knows whether a human has taken over.
         fetch('/api/chat/notify', {
           method: 'POST',

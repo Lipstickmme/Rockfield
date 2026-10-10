@@ -526,6 +526,52 @@ const dollars = (cents) => (cents / 100).toFixed(2);
       ok(`a credit raises two alerts and two texts: "${texts[1].sms.message.slice(0, 64)}..."`);
     }
 
+    /* ---- 23. an alert still records the email on a database missing 0004 -- */
+    {
+      // sms_status and sms_error arrived with the text channel. PostgREST
+      // rejects the whole PATCH when one column is missing, so on a database
+      // still on 0003 the update threw, the catch marked the alert failed,
+      // and an email that had been delivered was recorded as a failure - the
+      // row lying about the one thing it exists to record.
+      const db_ = require(ROOT + '/src/bank/db').db;
+      const alerts_ = require(ROOT + '/src/bank/alerts');
+      const users_ = require(ROOT + '/src/bank/users');
+      const who = await users_.findByEmail('demo@rockfieldglobalfinance.com');
+
+      const real = db_.alerts.update;
+      let refusals = 0;
+      db_.alerts.update = async (id, patch) => {
+        if ('sms_status' in patch || 'sms_error' in patch) {
+          refusals += 1;
+          const err = new Error(
+            'supabase update bank_alerts failed: 400 {"code":"PGRST204","message":'
+            + '"Could not find the \'sms_status\' column of \'bank_alerts\' in the schema cache"}'
+          );
+          throw err;
+        }
+        return real.call(db_.alerts, id, patch);
+      };
+
+      let raised;
+      try {
+        raised = await alerts_.notifyUser(who, 'deposit_posted', {
+          force: true,
+          subject: 'Money in - $10.00',
+          intro: 'A test credit.',
+          sms: 'A test credit.',
+        });
+      } finally {
+        db_.alerts.update = real;
+      }
+
+      assert.ok(refusals > 0, 'the stand-in refused the write the way PostgREST does');
+      assert.notStrictEqual(raised.status, 'failed', 'a refused text column must not fail the email');
+      const stored = await db_.alerts.findById(raised.id);
+      assert.ok(stored, 'the alert is still on record');
+      assert.notStrictEqual(stored.status, 'failed', 'and reads as it actually went');
+      ok(`a database without 0004 still records the email: status "${stored.status}"`);
+    }
+
     console.log('\n  all banking tests passed');
   } catch (err) {
     failures += 1;

@@ -28,13 +28,20 @@ const uuid = () => crypto.randomUUID();
  * catch.
  */
 function bankTables() {
-  const sql = fs.readFileSync(
-    path.join(__dirname, '..', 'supabase', 'migrations', '0003_bank.sql'),
-    'utf8'
-  );
+  // Every migration, in order, not just the one that creates the tables.
+  // A later migration adds a column rather than recreating the table, and a
+  // mock pinned to 0003 would pass a probe for a column the deployment does
+  // not have - which is the failure this parsing exists to catch.
+  const dir = path.join(__dirname, '..', 'supabase', 'migrations');
+  const sql = fs.readdirSync(dir)
+    .filter((name) => name.endsWith('.sql'))
+    .sort()
+    .map((name) => fs.readFileSync(path.join(dir, name), 'utf8'))
+    .join('\n');
+
   const tables = {};
-  const re = /create table if not exists public\.(bank_\w+)\s*\(([\s\S]*?)\n\);/g;
-  let match = re.exec(sql);
+  const created = /create table if not exists public\.(bank_\w+)\s*\(([\s\S]*?)\n\);/g;
+  let match = created.exec(sql);
   while (match) {
     const [, table, body] = match;
     const columns = body
@@ -44,8 +51,17 @@ function bankTables() {
       .map((line) => line.split(/\s+/)[0])
       .filter((name) => /^[a-z_][a-z0-9_]*$/.test(name));
     tables[table] = { columns, rows: [] };
-    match = re.exec(sql);
+    match = created.exec(sql);
   }
+
+  const added = /alter table (?:if exists )?public\.(bank_\w+)\s+add column (?:if not exists )?([a-z_][a-z0-9_]*)/gi;
+  match = added.exec(sql);
+  while (match) {
+    const [, table, column] = match;
+    if (tables[table] && !tables[table].columns.includes(column)) tables[table].columns.push(column);
+    match = added.exec(sql);
+  }
+
   return tables;
 }
 
